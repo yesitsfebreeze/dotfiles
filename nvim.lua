@@ -56,15 +56,30 @@ end
 require('mini.deps').setup({ path = { package = path_package } })
 local add, now, later = MiniDeps.add, MiniDeps.now, MiniDeps.later
 
--- Rasmus colorscheme
+-- GitHub colorscheme
 now(function()
-	add('kvrohit/rasmus.nvim')
-	-- Optional configuration (set before loading colorscheme)
-	-- vim.g.rasmus_italic_functions = true
-	-- vim.g.rasmus_bold_functions = true
-	g.rasmus_transparent = true
-	-- vim.g.rasmus_variant = "monochrome" -- or "dark" (default)
-	c([[colorscheme rasmus]])
+	add('lourenci/github-colors')
+	o.background = 'dark' -- or 'light'
+	c([[colorscheme github-colors]])
+
+	-- Transparent background
+	local hl = function(group, opts) api.nvim_set_hl(0, group, opts) end
+	hl('Normal', { bg = 'NONE' })
+	hl('NormalNC', { bg = 'NONE' })
+	hl('SignColumn', { bg = 'NONE' })
+	hl('NormalFloat', { bg = 'NONE' })
+
+	-- Block cursor with mode colors
+	local MODES = {
+		n = '#a7da1e', i = '#5298c4', v = '#9d37fc', V = '#9d37fc', [''] = '#9d37fc',
+		c = '#f7b83d', R = '#e61f44', s = '#d4856a', S = '#d4856a', [''] = '#d4856a',
+	}
+	hl('CursorNormal', { bg = MODES.n })
+	hl('CursorInsert', { bg = MODES.i })
+	hl('CursorVisual', { bg = MODES.v })
+	hl('CursorReplace', { bg = MODES.R })
+	hl('CursorCommand', { bg = MODES.c })
+	o.guicursor = 'n:block-CursorNormal,i-ci:block-CursorInsert,v-ve:block-CursorVisual,r-cr:block-CursorReplace,c:block-CursorCommand,o:block-CursorNormal'
 end)
 
 -- Safely execute immediately
