@@ -1,30 +1,34 @@
--- README_START
 local URL = "https://raw.githubusercontent.com/yesitsfebreeze/nvim/refs/heads/master/nvim.lua"
-local d = vim.fn.stdpath("config").."/lua"
-vim.fn.mkdir(d, "p") 
-if not (vim.uv or vim.loop).fs_stat(d .. "/nvim.lua") then vim.fn.system({"curl","-fsSL",URL,"-o", d .. "/nvim.lua"}) end
-require("nvim")
+
+-- README_START
+-- local d = vim.fn.stdpath("config").."/lua"
+-- vim.fn.mkdir(d, "p") 
+-- if not (vim.uv or vim.loop).fs_stat(d .. "/nvim.lua") then vim.fn.system({"curl","-fsSL",URL,"-o", d .. "/nvim.lua"}) end
+-- require("nvim")
 -- README_END
-
--- Reload config from GitHub
-vim.api.nvim_create_user_command('RLC', function()
-	local f = vim.fn.stdpath("config") .. "/lua/nvim.lua"
-	os.remove(f)
-	vim.fn.system({"curl", "-fsSL", URL, "-o", f})
-	vim.cmd('source ' .. vim.fn.stdpath("config") .. '/init.lua')
-	vim.notify('Config reloaded from GitHub')
-end, {})
-
 
 local H = os.getenv('HOME')
 local o = vim.opt
 local g = vim.g
 local c = vim.cmd
+local n = vim.notify
 local fn = vim.fn
 local api = vim.api
 local loop = vim.loop
 local lsp = vim.lsp
 local diagnostic = vim.diagnostic
+
+-- Reload config from GitHub
+vim.api.nvim_create_user_command('RLC', function()
+	local f = fn.stdpath("config") .. "/lua/nvim.lua"
+	os.remove(f)
+	fn.system({"curl", "-fsSL", URL, "-o", f})
+	c('source ' .. fn.stdpath("config") .. '/init.lua')
+	m('Config reloaded from GitHub')
+end, {})
+
+
+
 
 local path_package = fn.stdpath('data') .. '/site/'
 local mini_path = path_package .. 'pack/deps/start/mini.nvim'
@@ -174,7 +178,7 @@ now(function()
 			config = { anchor = 'SE', col = vim.o.columns, row = vim.o.lines - 2 },
 		},
 	})
-	vim.notify = require('mini.notify').make_notify()
+	m = require('mini.notify').make_notify()
 end)
 -- now(function() require('mini.icons').setup() end)
 -- now(function() require('mini.tabline').setup() end)
@@ -217,6 +221,35 @@ now(function()
 
 	-- Quick escape from insert mode
 	vim.keymap.set('i', 'jk', '<Esc>', { desc = 'Exit insert mode' })
+
+	-- VSCode-style selection with Shift+Arrow keys
+	vim.keymap.set('n', '<S-Left>', 'vh', { desc = 'Select left' })
+	vim.keymap.set('n', '<S-Right>', 'vl', { desc = 'Select right' })
+	vim.keymap.set('n', '<S-Up>', 'Vk', { desc = 'Select line up' })
+	vim.keymap.set('n', '<S-Down>', 'Vj', { desc = 'Select line down' })
+	vim.keymap.set('v', '<S-Left>', 'h', { desc = 'Extend left' })
+	vim.keymap.set('v', '<S-Right>', 'l', { desc = 'Extend right' })
+	vim.keymap.set('v', '<S-Up>', 'k', { desc = 'Extend up' })
+	vim.keymap.set('v', '<S-Down>', 'j', { desc = 'Extend down' })
+	vim.keymap.set('i', '<S-Left>', '<Esc>vh', { desc = 'Select left' })
+	vim.keymap.set('i', '<S-Right>', '<Esc>vl', { desc = 'Select right' })
+	vim.keymap.set('i', '<S-Up>', '<Esc>Vk', { desc = 'Select line up' })
+	vim.keymap.set('i', '<S-Down>', '<Esc>Vj', { desc = 'Select line down' })
+
+	-- Shift+Delete to delete line
+	vim.keymap.set('n', '<S-Del>', 'dd', { desc = 'Delete line' })
+	vim.keymap.set('i', '<S-Del>', '<Esc>ddi', { desc = 'Delete line' })
+	vim.keymap.set('v', '<S-Del>', 'd', { desc = 'Delete selection' })
+end)
+
+-- Multi-cursor (Ctrl+D like VSCode)
+now(function()
+	add({ source = 'mg979/vim-visual-multi' })
+	g.VM_maps = {
+		['Find Under'] = '<C-d>',
+		['Find Subword Under'] = '<C-d>',
+	}
+	g.VM_theme = 'neon'
 end)
 
 -- Formatting (conform.nvim)

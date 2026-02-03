@@ -11,9 +11,11 @@ jobs:
       - uses: actions/checkout@v4
       - name: Update README
         run: |
-          # Extract lua code between markers (excluding marker lines)
-          sed -n '/^-- README_START$/,/^-- README_END$/{ /README_START\|README_END/d; p }' nvim.lua > /tmp/code.txt
-          # Build new README: before markers, code block, after markers
+          # Extract URL from first line
+          URL_LINE=$(head -1 nvim.lua)
+          # Extract code block, strip "-- " prefix, prepend URL line
+          { echo "$URL_LINE"; sed -n '/^-- README_START$/,/^-- README_END$/{ /README_/d; s/^-- //; p }' nvim.lua; } > /tmp/code.txt
+          # Build new README
           awk '
             /<!-- README_START -->/ { print; print "```lua"; system("cat /tmp/code.txt"); print "```"; skip=1; next }
             /<!-- README_END -->/ { skip=0 }
