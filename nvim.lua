@@ -240,6 +240,9 @@ now(function()
 	vim.keymap.set('n', '<S-Del>', 'dd', { desc = 'Delete line' })
 	vim.keymap.set('i', '<S-Del>', '<Esc>ddi', { desc = 'Delete line' })
 	vim.keymap.set('v', '<S-Del>', 'd', { desc = 'Delete selection' })
+
+	-- LSP
+	vim.keymap.set('n', '<leader>dd', vim.lsp.buf.definition, { desc = 'Go to definition' })
 end)
 
 -- Multi-cursor (Ctrl+D like VSCode)
