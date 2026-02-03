@@ -1,18 +1,10 @@
 -- README_START
--- # Neovim Config
--- 
--- Copy the following into `~/.config/nvim/init.lua`:
--- 
--- ```lua
--- local URL = "https://raw.githubusercontent.com/yesitsfebreeze/dotfiles/refs/heads/master/nvim.lua"
--- local d = vim.fn.stdpath("config").."/lua"
--- vim.fn.mkdir(d, "p") 
--- if not (vim.uv or vim.loop).fs_stat(d .. "/nvim.lua") then vim.fn.system({"curl","-fsSL",URL,"-o", d .. "/nvim.lua"}) end
--- require("nvim")
--- ```
--- README_END
-
 local URL = "https://raw.githubusercontent.com/yesitsfebreeze/dotfiles/refs/heads/master/nvim.lua"
+local d = vim.fn.stdpath("config").."/lua"
+vim.fn.mkdir(d, "p") 
+if not (vim.uv or vim.loop).fs_stat(d .. "/nvim.lua") then vim.fn.system({"curl","-fsSL",URL,"-o", d .. "/nvim.lua"}) end
+require("nvim")
+-- README_END
 
 -- Reload config from GitHub
 vim.api.nvim_create_user_command('RLC', function()

@@ -9,8 +9,14 @@ jobs:
       - uses: actions/checkout@v4
       - name: Update README
         run: |
-          # Extract lines between markers, strip "-- " prefix, write to README
-          sed -n '/^-- README_START/,/^-- README_END/p' nvim.lua | grep -v 'README_START\|README_END' | sed 's/^-- //' > README.md
+          # Extract lua code between markers
+          CODE=$(sed -n '/^-- README_START/,/^-- README_END/p' nvim.lua | grep -v 'README_')
+          # Inject into README between markers
+          awk -v code="$CODE" '
+            /<!-- README_START -->/{print; print "```lua"; print code; print "```"; skip=1; next}
+            /<!-- README_END -->/{skip=0}
+            !skip
+          ' README.md > README.tmp && mv README.tmp README.md
       - uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "docs: update readme"
