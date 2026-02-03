@@ -355,9 +355,9 @@ end)
 now(function()
 	add({ source = 'nvim-lualine/lualine.nvim' })
 
-	local mode_colors = {
-		n = C.green, i = C.type, v = C.purple, V = C.purple, [''] = C.purple,
-		c = C.yellow, R = C.red, s = C.keyword, S = C.keyword, [''] = C.keyword,
+	local MODES = {
+		n = '#a7da1e', i = '#5298c4', v = '#9d37fc', V = '#9d37fc', [''] = '#9d37fc',
+		c = '#f7b83d', R = '#e61f44', s = '#d4856a', S = '#d4856a', [''] = '#d4856a',
 	}
 	local mode_map = {
 		n = 'N', i = 'I', v = 'V', V = 'V', [''] = 'V',
@@ -369,7 +369,7 @@ now(function()
 	api.nvim_set_hl(0, 'StatusLine', { bg = 'NONE' })
 	api.nvim_set_hl(0, 'StatusLineNC', { bg = 'NONE' })
 
-	local empty = { fg = C.fg, bg = 'NONE' }
+	local empty = { fg = '#c0ccdb', bg = 'NONE' }
 
 	require('lualine').setup({
 		options = {
@@ -391,7 +391,7 @@ now(function()
 					return mode_map[fn.mode()] or fn.mode():upper()
 				end,
 				color = function()
-					return { fg = mode_colors[fn.mode()] or C.fg, gui = 'bold' }
+					return { fg = MODES[fn.mode()] or '#c0ccdb', gui = 'bold' }
 				end,
 				padding = { left = 1, right = 1 },
 			}},
