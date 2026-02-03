@@ -33,7 +33,7 @@ local MODES = {
 }
 
 -- Reload config from GitHub
-vim.api.nvim_create_user_command('rlc', function()
+vim.api.nvim_create_user_command('ReloadConfig', function()
 	local f = fn.stdpath("config") .. "/lua/nvim.lua"
 	os.remove(f)
 	fn.system({"curl", "-fsSL", URL, "-o", f})
