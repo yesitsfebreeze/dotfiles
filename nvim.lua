@@ -17,18 +17,19 @@ local api = vim.api
 local loop = vim.loop
 local lsp = vim.lsp
 local diagnostic = vim.diagnostic
+local BLINK = 150 -- total blink cycle duration in ms
 
 local MODES = {
-	n = '#a7da1e',
-	i = '#5298c4',
+	n = '#5298c4',
+	i = '#a7da1e',
 	v = '#9d37fc',
 	V = '#9d37fc',
-	[''] = '#9d37fc',
+	['\22'] = '#9d37fc', -- visual block (Ctrl-V)
 	c = '#f7b83d',
 	R = '#e61f44',
 	s = '#d4856a',
 	S = '#d4856a',
-	[''] = '#d4856a',
+	['\19'] = '#d4856a', -- select block (Ctrl-S)
 }
 
 -- Reload config from GitHub
@@ -68,18 +69,39 @@ now(function()
 	hl('NormalNC', { bg = 'NONE' })
 	hl('SignColumn', { bg = 'NONE' })
 	hl('NormalFloat', { bg = 'NONE' })
+	hl('CursorLine', { bg = 'NONE' })
 
 	-- Block cursor with mode colors
-	local MODES = {
-		n = '#a7da1e', i = '#5298c4', v = '#9d37fc', V = '#9d37fc', [''] = '#9d37fc',
-		c = '#f7b83d', R = '#e61f44', s = '#d4856a', S = '#d4856a', [''] = '#d4856a',
-	}
 	hl('CursorNormal', { bg = MODES.n })
 	hl('CursorInsert', { bg = MODES.i })
 	hl('CursorVisual', { bg = MODES.v })
 	hl('CursorReplace', { bg = MODES.R })
 	hl('CursorCommand', { bg = MODES.c })
-	o.guicursor = 'n:block-CursorNormal,i-ci:block-CursorInsert,v-ve:block-CursorVisual,r-cr:block-CursorReplace,c:block-CursorCommand,o:block-CursorNormal'
+
+	
+	local on, off = math.floor(BLINK / 2), math.floor(BLINK / 2)
+	local wait = on
+	local blink_str = ('blinkwait%d-blinkon%d-blinkoff%d'):format(wait, on, off)
+	o.guicursor = table.concat({
+		'n:block-CursorNormal-' .. blink_str,
+		'i-ci:block-CursorInsert-' .. blink_str,
+		'v-ve:block-CursorVisual-' .. blink_str,
+		'r-cr:block-CursorReplace-' .. blink_str,
+		'c:block-CursorCommand-' .. blink_str,
+		'o:block-CursorNormal-' .. blink_str,
+	}, ',')
+
+	-- Line number colored by mode
+	local function update_cursorline_nr()
+		local mode = fn.mode()
+		local color = MODES[mode] or MODES.n
+		hl('CursorLineNr', { fg = color, bg = 'NONE', bold = true })
+	end
+	update_cursorline_nr()
+	api.nvim_create_autocmd('ModeChanged', {
+		pattern = '*',
+		callback = update_cursorline_nr,
+	})
 end)
 
 -- Safely execute immediately
