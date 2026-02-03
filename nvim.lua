@@ -18,6 +18,19 @@ local loop = vim.loop
 local lsp = vim.lsp
 local diagnostic = vim.diagnostic
 
+local MODES = {
+	n = '#a7da1e',
+	i = '#5298c4',
+	v = '#9d37fc',
+	V = '#9d37fc',
+	[''] = '#9d37fc',
+	c = '#f7b83d',
+	R = '#e61f44',
+	s = '#d4856a',
+	S = '#d4856a',
+	[''] = '#d4856a',
+}
+
 -- Reload config from GitHub
 vim.api.nvim_create_user_command('RLC', function()
 	local f = fn.stdpath("config") .. "/lua/nvim.lua"
@@ -355,10 +368,7 @@ end)
 now(function()
 	add({ source = 'nvim-lualine/lualine.nvim' })
 
-	local MODES = {
-		n = '#a7da1e', i = '#5298c4', v = '#9d37fc', V = '#9d37fc', [''] = '#9d37fc',
-		c = '#f7b83d', R = '#e61f44', s = '#d4856a', S = '#d4856a', [''] = '#d4856a',
-	}
+	
 	local mode_map = {
 		n = 'N', i = 'I', v = 'V', V = 'V', [''] = 'V',
 		c = 'C', R = 'R', s = 'S', S = 'S', [''] = 'S',
