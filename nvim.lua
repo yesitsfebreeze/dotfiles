@@ -55,10 +55,20 @@ end
 require('mini.deps').setup({ path = { package = path_package } })
 local add, now, later = MiniDeps.add, MiniDeps.now, MiniDeps.later
 
+-- Safely execute immediately
+now(function()
+  -- S-F12 sends <80>FE in this terminal
+  g.mapleader = '\x80\xfe'
+  g.maplocalleader = '\x80\xfe'
+  o.termguicolors = true
+  o.relativenumber = true
+  o.number = true
+end)
+
 -- GitHub colorscheme
 now(function()
   add('lourenci/github-colors')
-  o.background = 'dark' -- or 'light'
+  o.background = 'dark'
   c([[colorscheme github-colors]])
 
   -- Transparent background
@@ -100,16 +110,6 @@ now(function()
     pattern = '*',
     callback = update_cursorline_nr,
   })
-end)
-
--- Safely execute immediately
-now(function()
-  -- S-F12 sends <80>FE in this terminal
-  g.mapleader = '\x80\xfe'
-  g.maplocalleader = '\x80\xfe'
-  o.termguicolors = true
-  o.relativenumber = true
-  o.number = true
 end)
 
 now(function()
@@ -202,8 +202,8 @@ now(function()
     window = { delay = 300 },
   })
 
-  -- Quick escape from insert mode
-  vim.keymap.set('i', 'jk', '<Esc>', { desc = 'Exit insert mode' })
+  -- Ensure Escape works to exit insert mode
+  vim.keymap.set('i', '<Esc>', '<Esc>', { noremap = true })
 
   -- VSCode-style selection with Shift+Arrow keys
   vim.keymap.set('n', '<S-Left>', 'vh', { desc = 'Select left' })
@@ -325,6 +325,37 @@ later(function()
   vim.keymap.set('n', '<leader>fm', function()
     require('conform').format({ async = true, lsp_fallback = true })
   end, { desc = 'Format buffer' })
+end)
+
+-- Outline (symbol tree sidebar, always open)
+now(function()
+  add({ source = 'hedyhli/outline.nvim' })
+  require('outline').setup({
+    outline_window = {
+      position = 'right',
+      width = 25,
+      focus_on_open = false,
+    },
+    symbol_folding = {
+      autofold_depth = false, -- unfold all by default
+    },
+  })
+  vim.keymap.set('n', '<leader>o', '<cmd>Outline<cr>', { desc = 'Toggle Outline' })
+
+  -- Auto-open outline for code files
+  api.nvim_create_autocmd('BufEnter', {
+    callback = function()
+      local ft = vim.bo.filetype
+      local ignore = { '', 'help', 'qf', 'oil', 'Outline', 'TelescopePrompt', 'noice', 'notify', 'undotree', 'diff' }
+      if not vim.tbl_contains(ignore, ft) and vim.bo.buftype == '' then
+        vim.defer_fn(function()
+          if not require('outline').is_open() then
+            vim.cmd('OutlineOpen!')
+          end
+        end, 100)
+      end
+    end,
+  })
 end)
 
 -- Gitsigns
