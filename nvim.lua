@@ -35,8 +35,9 @@ local MODES = {
 -- Reload config from GitHub
 vim.api.nvim_create_user_command('ReloadConfig', function()
 	local f = fn.stdpath("config") .. "/lua/nvim.lua"
+	local cache_bust = '?t=' .. os.time()
 	os.remove(f)
-	fn.system({"curl", "-fsSL", URL, "-o", f})
+	fn.system({"curl", "-fsSL", URL .. cache_bust, "-o", f})
 	c('source ' .. fn.stdpath("config") .. '/init.lua')
 	m('Config reloaded from GitHub')
 end, {})
