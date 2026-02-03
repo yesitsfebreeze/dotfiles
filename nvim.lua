@@ -43,23 +43,16 @@ end
 require('mini.deps').setup({ path = { package = path_package } })
 local add, now, later = MiniDeps.add, MiniDeps.now, MiniDeps.later
 
-_G.C = {
-	bg = '#131719',
-	fg = '#c0ccdb',
-	comment = '#4e5c66',
-	string = '#84c4ce',
-	number = '#529ca8',
-	keyword = '#d4856a',
-	type = '#5298c4',
-	func = '#43b5b3',
-	line = '#1a1f22',
-	gutter = '#3f4c53',
-	red = '#e61f44',
-	green = '#a7da1e',
-	yellow = '#f7b83d',
-	purple = '#9d37fc',
-	sel = '#2C5756',
-}
+-- Rasmus colorscheme
+now(function()
+	add('kvrohit/rasmus.nvim')
+	-- Optional configuration (set before loading colorscheme)
+	-- vim.g.rasmus_italic_functions = true
+	-- vim.g.rasmus_bold_functions = true
+	g.rasmus_transparent = true
+	-- vim.g.rasmus_variant = "monochrome" -- or "dark" (default)
+	c([[colorscheme rasmus]])
+end)
 
 -- Safely execute immediately
 now(function()
@@ -90,63 +83,6 @@ now(function()
 	o.splitbelow = true
 	o.swapfile = false
 	o.scrolloff = 99999
-end)
-
-now(function()
-	-- Blink Contrast theme
-	local hl = function(g, opts) api.nvim_set_hl(0, g, opts) end
-
-	-- Cursor colors per mode
-	hl('CursorNormal', { bg = C.green })
-	hl('CursorInsert', { bg = C.type })
-	hl('CursorVisual', { bg = C.purple })
-	hl('CursorReplace', { bg = C.red })
-	hl('CursorCommand', { bg = C.yellow })
-	o.guicursor = 'n:block-CursorNormal,i-ci:block-CursorInsert,v-ve:block-CursorVisual,r-cr:block-CursorReplace,c:block-CursorCommand,o:block-CursorNormal'
-
-	hl('Normal', { bg = 'NONE', fg = C.fg })
-	hl('NormalNC', { bg = 'NONE' })
-	hl('SignColumn', { bg = 'NONE' })
-	hl('CursorLine', { bg = 'NONE' })
-	hl('LineNr', { fg = C.gutter, bg = 'NONE' })
-	hl('CursorLineNr', { fg = C.keyword })
-	hl('Comment', { fg = C.comment })
-	hl('String', { fg = C.string })
-	hl('Number', { fg = C.number })
-	hl('Keyword', { fg = C.keyword })
-	hl('Type', { fg = C.type })
-	hl('Function', { fg = C.func })
-	hl('Constant', { fg = C.keyword })
-	hl('Identifier', { fg = C.fg })
-	hl('Statement', { fg = C.keyword })
-	hl('PreProc', { fg = C.type })
-	hl('Special', { fg = C.func })
-	hl('Visual', { bg = C.sel })
-	hl('Search', { bg = C.yellow, fg = C.bg })
-	hl('IncSearch', { bg = C.keyword, fg = C.bg })
-	hl('DiagnosticError', { fg = C.red })
-	hl('DiagnosticWarn', { fg = C.yellow })
-	hl('DiagnosticInfo', { fg = C.type })
-	hl('DiagnosticHint', { fg = C.purple })
-	hl('DiffAdd', { fg = C.green })
-	hl('DiffChange', { fg = C.yellow })
-	hl('DiffDelete', { fg = C.red })
-	hl('Pmenu', { bg = '#1e2427', fg = C.fg })
-	hl('PmenuSel', { bg = C.gutter, fg = C.fg })
-	hl('FloatBorder', { fg = C.gutter })
-	hl('NormalFloat', { bg = '#1e2427' })
-	-- Treesitter
-	hl('@comment', { link = 'Comment' })
-	hl('@string', { link = 'String' })
-	hl('@number', { link = 'Number' })
-	hl('@keyword', { link = 'Keyword' })
-	hl('@function', { link = 'Function' })
-	hl('@type', { link = 'Type' })
-	hl('@variable', { fg = C.fg })
-	hl('@parameter', { fg = '#ffffff' })
-	hl('@property', { fg = C.fg })
-	hl('@tag', { fg = C.type })
-	hl('@tag.attribute', { fg = C.keyword })
 end)
 
 now(function()
