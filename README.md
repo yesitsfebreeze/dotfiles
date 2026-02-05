@@ -1,3 +1,4 @@
 install just: [github.com/casey/just](github.com/casey/just)  
-run:  
+  
+then run:  
 `just install`
