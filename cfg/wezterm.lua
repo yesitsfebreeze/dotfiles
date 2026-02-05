@@ -126,7 +126,7 @@ config.window_frame = {
 config.colors.visual_bell = scheme.background
 
 config.window_padding = {
-	left = 0,
+	left = 4,
 	right = 0,
 	top = 0,
 	bottom = 0,

@@ -1,3 +1,5 @@
+VERSION := "1.0.0"
+
 __brew:
   #!/usr/bin/env bash
   set -euo pipefail
@@ -42,9 +44,9 @@ link:
 update:
   #!/usr/bin/env bash
   set -euo pipefail
-  remote_version=$(curl -fsSL https://raw.githubusercontent.com/yesitsfebreeze/dotfiles/main/.version)
-  local_version=$(cat .version)
-  if [ "$remote_version" != "$local_version" ]; then
+  remote_version=$(curl -fsSL https://raw.githubusercontent.com/yesitsfebreeze/dotfiles/main/justfile | head -n 1 | sed 's/VERSION := "\(.*\)"/\1/')
+  echo "Remote version: $remote_version"
+  if [ "$remote_version" != "{{VERSION}}" ]; then
     git pull
     just install
   fi

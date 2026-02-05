@@ -1,18 +1,7 @@
 os.execute('cd ~/.config/dotfiles && just update &')
 
-local URL = "https://raw.githubusercontent.com/yesitsfebreeze/nvim/refs/heads/master/nvim.lua"
--- README_START
--- local d = vim.fn.stdpath("config").."/lua"
--- vim.fn.mkdir(d, "p")
--- if not (vim.uv or vim.loop).fs_stat(d .. "/nvim.lua") then vim.fn.system({"curl","-fsSL",URL,"-o", d .. "/nvim.lua"}) end
--- require("nvim")
--- README_END
-
 vim.api.nvim_create_user_command('ReloadConfig', function()
-  local f = vim.fn.stdpath("config") .. "/lua/nvim.lua"
-  vim.os.remove(f)
-  vim.fn.system({ "curl", "-fsSL", URL .. '?t=' .. vim.os.time(), "-o", f })
-  c('source ' .. vim.fn.stdpath("config") .. '/init.lua')
+  vim.cmd('source ' .. vim.fn.stdpath("config") .. '/init.lua')
 end, {})
 
 local function np(p) return p:lower():gsub("^([a-z]):", "(%1_)"):gsub("^/", ""):gsub("[/\\]+", "_"):gsub("^_+", "") end
@@ -96,50 +85,46 @@ now(function()
       ["<leader>e"] = "actions.close",
     },
   })
-  startup(oil.open, 1)
   km('n', KEYMAP.explorer, oil.open, { desc = 'Open Oil file explorer' })
 end)
 
 -- Session management
 now(function()
   local session_name = np(vim.fn.getcwd())
+  local has_file_arg = vim.fn.argc() > 0 and vim.fn.argv(0) ~= '.'
 
 	add('echasnovski/mini.sessions')
 	require('mini.sessions').setup({ autoread = false, autowrite = false })
 
-	startup(function()
+  -- Only handle sessions if no file argument was passed
+  if not has_file_arg then
+    startup(function()
       local sesh = jp(require('mini.sessions').config.directory, session_name)
-      if vim.fn.filereadable(sesh) ~= 1 then return end
-        local ok, err = pcall(function() require('mini.sessions').read(session_name, { force = true }) end)
-        if ok then print('Loaded session: ' .. session_name) end
-  end, 2)
-	
-  vim.api.nvim_create_autocmd('VimLeavePre', { callback = function()
-    print('Saving session: ' .. session_name)
-    require('mini.sessions').write(session_name, { force = true })
-  end})
-
-  -- On startup with no args, open Oil in the sessions directory
-  startup(function()
-    -- if vim.fn.argc() > 0 then return end
-    -- local session_dir = require('mini.sessions').config.directory
-    -- require('oil').open(session_dir)
-    -- local group = vim.api.nvim_create_augroup('OilSessionLoader', { clear = true })
-    -- vim.api.nvim_create_autocmd('BufEnter', {
-    --   group = group,
-    --   once = false,
-    --   callback = function()
-    --     print
-    --     vim.keymap.set('n', '<CR>', function()
-    --       local file = vim.fn.expand('<cfile>')
-    --       local session = vim.fn.fnamemodify(file, ':t:r')
-    --       require('mini.sessions').read(session, { force = true })
-    --       -- Remove the autocmd group after loading
-    --       vim.api.nvim_del_augroup_by_name('OilSessionLoader')
-    --     end, { buffer = 0 })
-    --   end,
-    -- })
-  end, 2)
+      
+      if vim.fn.filereadable(sesh) == 1 then
+        -- Session exists: load it
+        local ok = pcall(function() 
+          require('mini.sessions').read(session_name, { force = true }) 
+        end)
+        if ok then 
+          print('Loaded session: ' .. session_name) 
+        end
+      else
+        -- No session exists: create one and open Oil
+        require('mini.sessions').write(session_name, { force = true })
+        print('Created new session: ' .. session_name)
+        require('oil').open()
+      end
+    end, 2)
+    
+    -- Auto-save session on exit
+    vim.api.nvim_create_autocmd('VimLeavePre', { 
+      callback = function()
+        print('Saving session: ' .. session_name)
+        require('mini.sessions').write(session_name, { force = true })
+      end
+    })
+  end
 
 end)
 
@@ -172,11 +157,15 @@ now(function()
 
   -- Transparent background
   local hl = function(group, opts) vim.api.nvim_set_hl(0, group, opts) end
-  hl('Normal', { bg = 'NONE' })
-  hl('NormalNC', { bg = 'NONE' })
-  hl('SignColumn', { bg = 'NONE' })
-  hl('NormalFloat', { bg = 'NONE' })
-  hl('CursorLine', { bg = 'NONE', fg = MODES.n})
+  hl('Normal', { bg = 'NONE', ctermbg = 'NONE' })
+  hl('NormalNC', { bg = 'NONE', ctermbg = 'NONE' })
+  hl('SignColumn', { bg = 'NONE', ctermbg = 'NONE' })
+  hl('NormalFloat', { bg = 'NONE', ctermbg = 'NONE' })
+  hl('CursorLine', { bg = 'NONE', ctermbg = 'NONE', fg = MODES.n})
+  hl('LineNr', { bg = 'NONE', ctermbg = 'NONE' })
+  hl('EndOfBuffer', { bg = 'NONE', ctermbg = 'NONE' })
+  hl('TabLine', { bg = 'NONE', ctermbg = 'NONE' })
+  hl('TabLineFill', { bg = 'NONE', ctermbg = 'NONE' })
 
   -- Block cursor with mode colors
   hl('CursorNormal', { bg = MODES.n })
@@ -221,8 +210,14 @@ end)
 
 -- Lualine
 now(function()
-  -- vim.opt.cmdheight = 0
   add({ source = 'nvim-lualine/lualine.nvim' })
+  add({
+    source = 'folke/noice.nvim',
+    depends = { 'MunifTanjim/nui.nvim' }
+  })
+  vim.opt.cmdheight = 0
+  vim.opt.laststatus = 0
+  vim.opt.showmode = false
 
   local mode_map = {
     n = 'N',
@@ -258,10 +253,15 @@ now(function()
         inactive = { a = empty, b = empty, c = empty },
       },
     },
-    sections = {
+    sections = {},
+    inactive_sections = {},
+    tabline = {
       lualine_a = { {
         function()
-          return mode_map[vim.fn.mode()] or vim.fn.mode():upper()
+          if vim.fn.mode() == 'c' then
+            return ':'
+          end
+          return "   "  .. mode_map[vim.fn.mode()] or vim.fn.mode():upper()
         end,
         color = function()
           return { fg = MODES[vim.fn.mode()] or '#c0ccdb', gui = 'bold' }
@@ -269,13 +269,90 @@ now(function()
         padding = { left = 1, right = 1 },
       } },
       lualine_b = { 'branch', 'diff', 'diagnostics' },
-      lualine_c = { { 'filename', path = 1 } },
-      lualine_x = { 'encoding', 'filetype' },
-      lualine_y = { 'progress', 'location' },
+      lualine_c = { {
+        function()
+          if vim.fn.mode() == 'c' then
+            return vim.fn.getcmdline()
+          end
+          return vim.fn.expand('%:~:.')
+        end,
+        color = function()
+          if vim.fn.mode() == 'c' then
+            return { fg = MODES.c }
+          end
+          return nil
+        end,
+      } },
+      lualine_x = { 
+        function()
+          if vim.fn.mode() == 'c' then
+            return ''
+          end
+          return vim.bo.fileencoding or vim.o.encoding
+        end,
+        function()
+          if vim.fn.mode() == 'c' then
+            return ''
+          end
+          return vim.bo.filetype
+        end,
+      },
+      lualine_y = { 
+        function()
+          if vim.fn.mode() == 'c' then
+            return ''
+          end
+          return vim.fn.line('.') .. ':' .. vim.fn.col('.')
+        end,
+      },
       lualine_z = { {
-        function() return os.date('%H:%M') end,
+        function() 
+          if vim.fn.mode() == 'c' then
+            return ''
+          end
+          return os.date('%H:%M') 
+        end,
         padding = { left = 1, right = 1 },
       } },
+    },
+  })
+
+  require('noice').setup({
+    cmdline = {
+      enabled = true,
+      view = 'cmdline',
+      format = {
+        cmdline = { pattern = '^:', icon = ':', lang = 'vim' },
+        search_down = { kind = 'search', pattern = '^/', icon = '/', lang = 'regex' },
+        search_up = { kind = 'search', pattern = '^%?', icon = '?', lang = 'regex' },
+      },
+    },
+    messages = {
+      enabled = true,
+      view = 'mini',
+      view_error = 'mini',
+      view_warn = 'mini',
+    },
+    popupmenu = {
+      enabled = false,
+    },
+    views = {
+      cmdline = {
+        position = {
+          row = 0,
+          col = 0,
+        },
+        size = {
+          width = '100%',
+          height = 'auto',
+        },
+      },
+    },
+    routes = {
+      {
+        view = 'mini',
+        filter = { event = 'msg_showmode' },
+      },
     },
   })
 end)
