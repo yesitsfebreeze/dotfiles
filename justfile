@@ -1,5 +1,36 @@
 VERSION := "1.0.2"
 
+install:
+  @just __brew
+  @just __update wezterm true
+  @just __update hammerspoon true
+  @just __update nvim false
+  @just __update ripgrep false
+  @just link
+  @just __adjust
+
+link:
+  #!/usr/bin/env bash
+  set -euo pipefail
+  shopt -s dotglob
+  for file in src/*; do
+    if [ -f "$file" ]; then
+      just __link "$file"
+    fi
+  done
+
+update:
+  #!/usr/bin/env bash
+  set -euo pipefail
+  remote_version=$(curl -fsSL https://raw.githubusercontent.com/yesitsfebreeze/dotfiles/main/justfile?$(date +%s) | head -n 1 | sed 's/VERSION := "\(.*\)"/\1/')
+  if [ "$remote_version" != "{{VERSION}}" ]; then
+    git pull
+    just install
+  fi
+
+push:
+  @git add --all && git commit -m "change" && git push --force
+
 __brew:
   #!/usr/bin/env bash
   set -euo pipefail
@@ -37,33 +68,14 @@ __adjust:
   @defaults write com.apple.dock expose-animation-duration -float 0
   @killall Dock
 
-install:
-  @just __brew
-  @just __update wezterm true
-  @just __update hammerspoon true
-  @just __update nvim false
-  @just __update ripgrep false
-  @just link
-  @just __adjust
-
-link:
-  @mkdir -p ~/.config/wezterm
-  @ln -sf $(pwd)/cfg/wezterm.lua ~/.config/wezterm/wezterm.lua
-
-  @mkdir -p ~/.hammerspoon
-  @ln -sf $(pwd)/cfg/hammerspoon.lua ~/.hammerspoon/init.lua
-
-  @mkdir -p ~/.config/nvim
-  @ln -sf $(pwd)/cfg/nvim.lua ~/.config/nvim/init.lua
-
-update:
+__link src:
   #!/usr/bin/env bash
   set -euo pipefail
-  remote_version=$(curl -fsSL https://raw.githubusercontent.com/yesitsfebreeze/dotfiles/main/justfile?$(date +%s) | head -n 1 | sed 's/VERSION := "\(.*\)"/\1/')
-  if [ "$remote_version" != "{{VERSION}}" ]; then
-    git pull
-    just install
-  fi
-
-push:
-  @git add --all && git commit -m "change" && git push --force
+  first_line=$(head -n 1 "{{src}}")
+  [[ ! "${first_line:0:5}" =~ "@" ]] && exit 0
+  dest=$(eval echo "${first_line#*@}")
+  [ -z "$dest" ] && exit 1
+  mkdir -p "$(dirname "$dest")"
+  rm -f "$dest"
+  ln -sf "$(pwd)/{{src}}" "$dest"
+  echo "Linked $(basename "{{src}}")"

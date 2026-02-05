@@ -1,3 +1,5 @@
+--@~/.config/wezterm/wezterm.lua
+
 os.execute('cd ~/.config/dotfiles && just update &')
 
 local cfg = {
@@ -8,7 +10,6 @@ local cfg = {
 	FONT = 'Departure Mono',
 	FONT_SIZE = 18,
 	LINE_HEIGHT = 1.01,
-	BACKGROUND_TINT = "#14181c",
 	OPACITY = 0.825,
 	BLUR = 150,
 	SPLIT_PANE_SIZE = 0.5,
@@ -20,6 +21,7 @@ local mux = wezterm.mux
 local config = wezterm.config_builder and wezterm.config_builder() or {}
 local xdg_dir = wezterm.home_dir .. '/.config/wezterm'
 local schemes = wezterm.get_builtin_color_schemes()
+local palette = dofile(wezterm.home_dir .. '/.config/palette.lua')
 
 local scheme = schemes[cfg.THEME]
 
@@ -40,66 +42,66 @@ config.font = wezterm.font(
 )
 
 config.colors = {
-	foreground = "#c0ccdb",
-	background = "#131719",
+	foreground = palette.foreground,
+	background = palette.background,
 
-	cursor_bg = "#ffffff",
-	cursor_fg = "#131719",
-	cursor_border = "#ffffff",
+	cursor_bg = palette.cursor,
+	cursor_fg = palette.background,
+	cursor_border = palette.cursor,
 
-	selection_fg = "#ffffff",
-	selection_bg = "#43b5b3",
+	selection_fg = palette.variable,
+	selection_bg = palette.cyan,
 
-	scrollbar_thumb = "#3f4c53",
-	split = "#293236",
+	scrollbar_thumb = palette.ansi_bright_black,
+	split = palette.panel_bg,
 
 	tab_bar = {
 		background = "transparent",
 		active_tab = {
 			bg_color = "transparent",
-			fg_color = "#c0ccdb",
+			fg_color = palette.foreground,
 			intensity = "Bold",
 		},
 		inactive_tab = {
 			bg_color = "transparent",
-			fg_color = "#6b828d",
+			fg_color = palette.comment,
 		},
 		inactive_tab_hover = {
 			bg_color = "transparent",
-			fg_color = "#c0ccdb",
+			fg_color = palette.foreground,
 		},
 		new_tab = {
 			bg_color = "transparent",
-			fg_color = "#c0ccdb",
+			fg_color = palette.foreground,
 		},
 		new_tab_hover = {
 			bg_color = "transparent",
-			fg_color = "#ffffff",
+			fg_color = palette.variable,
 		},
 	},
 
 	ansi = {
-		"#1e2427", -- black
-		"#ba0e2e", -- red
-		"#5298c4", -- green (note: your theme uses this for green)
-		"#d4856a", -- yellow
-		"#43b5b3", -- blue (theme uses teal here)
-		"#d4856a", -- magenta
-		"#43b5b3", -- cyan
-		"#d0d9e4", -- white
+		palette.ansi_black,
+		palette.ansi_red,
+		palette.ansi_green,
+		palette.ansi_yellow,
+		palette.ansi_blue,
+		palette.ansi_magenta,
+		palette.ansi_cyan,
+		palette.ansi_white,
 	},
 	brights = {
-		"#3f4c53", -- bright black
-		"#f03e5f", -- bright red
-		"#9ec5de", -- bright green
-		"#ebc6b9", -- bright yellow
-		"#8ad4d2", -- bright blue
-		"#ebc6b9", -- bright magenta
-		"#8ad4d2", -- bright cyan
-		"#ffffff", -- bright white
+		palette.ansi_bright_black,
+		palette.ansi_bright_red,
+		palette.ansi_bright_green,
+		palette.ansi_bright_yellow,
+		palette.ansi_bright_blue,
+		palette.ansi_bright_magenta,
+		palette.ansi_bright_cyan,
+		palette.ansi_bright_white,
 	},
 
-	compose_cursor = "#ffffff",
+	compose_cursor = palette.cursor,
 }
 
 config.font_size = cfg.FONT_SIZE
@@ -194,14 +196,25 @@ local function toggle_right_pane(window, pane)
 	end
 end
 
-config.keys = config.keys or {}
-
--- your existing binding(s)
-table.insert(config.keys, { key = "Tab", mods = "CTRL", action = wezterm.action_callback(toggle_right_pane) })
-
 local ESC = string.char(27)
 local CTRL_SLASH = string.char(28)
-table.insert(config.keys, { key = "F12", mods = "SHIFT", action = wezterm.action.SendString(ESC .. ESC .. CTRL_SLASH) })
+config.keys = {
+	{ key = "Tab", mods = "CTRL", action = wezterm.action_callback(toggle_right_pane) },
+	{ key = "F12", mods = "SHIFT", action = wezterm.action.SendString(ESC .. ESC .. CTRL_SLASH) },
+
+	-- Page up / down = real paging
+	{ key = 'PageUp',   action = act.SendKey { key = 'PageUp' } },
+	{ key = 'PageDown', action = act.SendKey { key = 'PageDown' } },
+
+	-- Home / End = line start / end
+	{ key = 'Home', action = act.SendKey { key = 'Home' } },
+	{ key = 'End',  action = act.SendKey { key = 'End' } },
+
+	-- Ctrl+Home / Ctrl+End = buffer start / end
+	{ key = 'Home', mods = 'CTRL', action = act.SendString '\x1b[H' },
+	{ key = 'End',  mods = 'CTRL', action = act.SendString '\x1b[F' },
+}
+
 
 config.native_macos_fullscreen_mode = false
 wezterm.on("gui-startup", function(cmd)

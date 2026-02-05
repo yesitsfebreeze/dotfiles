@@ -1,3 +1,4 @@
+--@~/.hammerspoon/init.lua
 os.execute('cd ~/.config/dotfiles && just update &')
 
 local w = {}
