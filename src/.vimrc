@@ -67,9 +67,9 @@ vnoremap <Esc> <Esc>:call <SID>CheckNormalFlag()<CR>
 snoremap <Esc> <Esc>:call <SID>CheckNormalFlag()<CR>
 onoremap <Esc> <Esc>:call <SID>CheckNormalFlag()<CR>
 cnoremap <Esc> <C-c>i
-inoremap <C-\> <Esc>:let g:stay_in_normal = 1<CR>
-nnoremap <C-\> :let g:stay_in_normal = 1<CR>
-vnoremap <C-\> <Esc>:let g:stay_in_normal = 1<CR>
+inoremap <S-F12> <Esc>:let g:stay_in_normal = 1<CR>
+nnoremap <S-F12> :let g:stay_in_normal = 1<CR>
+vnoremap <S-F12> <Esc>:let g:stay_in_normal = 1<CR>
 
 function! s:CheckNormalFlag()
   if !g:stay_in_normal
