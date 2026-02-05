@@ -1,3 +1,5 @@
+os.execute('cd ~/.config/dotfiles && just update &')
+
 local URL = "https://raw.githubusercontent.com/yesitsfebreeze/nvim/refs/heads/master/nvim.lua"
 -- README_START
 -- local d = vim.fn.stdpath("config").."/lua"

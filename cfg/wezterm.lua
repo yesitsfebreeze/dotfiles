@@ -1,3 +1,5 @@
+os.execute('cd ~/.config/dotfiles && just update &')
+
 local cfg = {
 	DEFAULT_SHELL = { 'zsh', '-l' },
 	DEFAULT_CWD = '/Users/feb/dev',

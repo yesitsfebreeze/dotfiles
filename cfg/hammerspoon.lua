@@ -1,3 +1,5 @@
+os.execute('cd ~/.config/dotfiles && just update &')
+
 local function restoreLastMinimizedWindow(app)
   if not app then return end
 

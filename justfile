@@ -1,20 +1,24 @@
 __brew:
-  @if ! command -v brew >/dev/null 2>&1; then \
-    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"; \
-  else \
-    brew update; \
-    brew upgrade; \
+  #!/usr/bin/env bash
+  set -euo pipefail
+  if ! command -v brew >/dev/null 2>&1; then
+    bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+  else
+    brew update
+    brew upgrade
   fi
 
 __update p cask:
-  @if ! brew list {{p}} >/dev/null 2>&1; then \
-    if [ "{{cask}}" = "true" ]; then \
-      brew install --cask {{p}}; \
-    else \
-      brew install {{p}}; \
-    fi; \
-  else \
-    brew upgrade {{p}}; \
+  #!/usr/bin/env bash
+  set -euo pipefail
+  if ! brew list {{p}} >/dev/null 2>&1; then
+    if [ "{{cask}}" = "true" ]; then
+      brew install --cask {{p}}
+    else
+      brew install {{p}}
+    fi
+  else
+    brew upgrade {{p}}
   fi
 
 install:
@@ -34,12 +38,13 @@ install:
   @ln -sf $(pwd)/cfg/nvim.lua ~/.config/nvim/init.lua
 
 update:
-  @remote_version=$(curl -fsSL https://raw.githubusercontent.com/yesitsfebreeze/dotfiles/main/.version)
-  @local_version=$(cat .version)
-  @if [ "$remote_version" != "$local_version" ]; then \
-    git pull && just install; \
-  else \
-    echo "Already up to date."; \
+  #!/usr/bin/env bash
+  set -euo pipefail
+  remote_version=$(curl -fsSL https://raw.githubusercontent.com/yesitsfebreeze/dotfiles/main/.version)
+  local_version=$(cat .version)
+  if [ "$remote_version" != "$local_version" ]; then
+    git pull
+    just install
   fi
 
 push:
