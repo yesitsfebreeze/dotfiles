@@ -44,7 +44,8 @@ link:
 update:
   #!/usr/bin/env bash
   set -euo pipefail
-  remote_version=$(curl -fsSL https://raw.githubusercontent.com/yesitsfebreeze/dotfiles/main/justfile | head -n 1 | sed 's/VERSION := "\(.*\)"/\1/')
+  echo "https://raw.githubusercontent.com/yesitsfebreeze/dotfiles/main/justfile?$(date +%s)"
+  remote_version=$(curl -fsSL https://raw.githubusercontent.com/yesitsfebreeze/dotfiles/main/justfile?$(date +%s) | head -n 1 | sed 's/VERSION := "\(.*\)"/\1/')
   echo "Remote version: $remote_version"
   if [ "$remote_version" != "{{VERSION}}" ]; then
     git pull
