@@ -31,10 +31,8 @@ config.color_scheme = cfg.THEME
 config.font_dirs = { 'fonts' }
 
 config.default_cursor_style = "BlinkingBlock"
-config.animation_fps = 1 -- lower FPS for hard blink
-config.cursor_blink_rate = 800 -- ms, adjust as needed
-config.cursor_blink_ease_in = "Constant"
-config.cursor_blink_ease_out = "Constant"
+config.animation_fps = 1
+config.cursor_blink_rate = 0
 
 config.font = wezterm.font(
 	cfg.FONT,

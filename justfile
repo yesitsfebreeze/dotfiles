@@ -27,7 +27,9 @@ install:
   @just __update hammerspoon true
   @just __update nvim false
   @just __update ripgrep false
-  
+  @just link
+
+link:
   @mkdir -p ~/.config/wezterm
   @ln -sf $(pwd)/cfg/wezterm.lua ~/.config/wezterm/wezterm.lua
 
