@@ -23,6 +23,20 @@ __update p cask:
     brew upgrade {{p}}
   fi
 
+__adjust:
+  @defaults write -g NSAutomaticWindowAnimationsEnabled -bool false
+  @defaults write -g NSWindowResizeTime -float 0.001
+  @defaults write -g NSScrollAnimationEnabled -bool false
+  @defaults write -g NSDocumentRevisionsWindowTransformAnimation -bool false
+  @defaults write -g NSInitialToolTipDelay -int 0
+  @defaults write -g NSWindowResizeTime -float 0
+  @defaults write com.apple.finder DisableAllAnimations -bool true
+  @killall Finder
+  @defaults write com.apple.dock autohide-time-modifier -float 0
+  @defaults write com.apple.dock autohide-delay -float 0
+  @defaults write com.apple.dock expose-animation-duration -float 0
+  @killall Dock
+
 install:
   @just __brew
   @just __update wezterm true
@@ -30,6 +44,7 @@ install:
   @just __update nvim false
   @just __update ripgrep false
   @just link
+  @just __adjust
 
 link:
   @mkdir -p ~/.config/wezterm
@@ -44,9 +59,7 @@ link:
 update:
   #!/usr/bin/env bash
   set -euo pipefail
-  echo "https://raw.githubusercontent.com/yesitsfebreeze/dotfiles/main/justfile?$(date +%s)"
   remote_version=$(curl -fsSL https://raw.githubusercontent.com/yesitsfebreeze/dotfiles/main/justfile?$(date +%s) | head -n 1 | sed 's/VERSION := "\(.*\)"/\1/')
-  echo "Remote version: $remote_version"
   if [ "$remote_version" != "{{VERSION}}" ]; then
     git pull
     just install
