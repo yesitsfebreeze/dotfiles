@@ -200,7 +200,10 @@ local ESC = string.char(27)
 local CTRL_SLASH = string.char(28)
 config.keys = {
 	{ key = "Tab", mods = "CTRL", action = wezterm.action_callback(toggle_right_pane) },
-	{ key = "F12", mods = "SHIFT", action = wezterm.action.SendString(ESC .. ESC .. CTRL_SLASH) },
+	
+	{ key = 'F', mods = 'CTRL|SHIFT', action = act.SendString 'Δf' },
+	{ key = 'S', mods = 'CTRL|SHIFT', action = act.SendString 'Δs' },
+	{ key = 'Z', mods = 'CTRL|SHIFT', action = act.SendString 'Δz' },
 
 	-- Page up / down = real paging
 	{ key = 'PageUp',   action = act.SendKey { key = 'PageUp' } },
