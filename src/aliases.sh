@@ -1,3 +1,0 @@
-#@~/.aliases
-
-alias :='nvim'
