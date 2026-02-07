@@ -13,10 +13,8 @@ link:
   #!/usr/bin/env bash
   set -euo pipefail
   shopt -s dotglob
-  for file in src/*; do
-    if [ -f "$file" ]; then
-      just __link "$file"
-    fi
+  find src -type f | while read -r file; do
+    just __link "$file"
   done
 
 update:
