@@ -2,19 +2,6 @@
 
 os.execute('cd ~/.config/dotfiles && just update &')
 
-local cfg = {
-	DEFAULT_SHELL = { 'zsh', '-l' },
-	DEFAULT_CWD = '/Users/feb/dev',
-	DEFAULT_TERMINAL = '/bin/zsh',
-	THEME = 'Gruvbox dark, hard (base16)',
-	FONT = 'Departure Mono',
-	FONT_SIZE = 18,
-	LINE_HEIGHT = 1.01,
-	OPACITY = 0.825,
-	BLUR = 150,
-	SPLIT_PANE_SIZE = 0.5,
-}
-
 local wezterm = require('wezterm')
 local act = wezterm.action
 local mux = wezterm.mux
@@ -22,6 +9,20 @@ local config = wezterm.config_builder and wezterm.config_builder() or {}
 local xdg_dir = wezterm.home_dir .. '/.config/wezterm'
 local schemes = wezterm.get_builtin_color_schemes()
 local palette = dofile(wezterm.home_dir .. '/.config/palette.lua')
+local is_windows = wezterm.target_triple:find('windows') ~= nil
+
+local cfg = {
+	DEFAULT_SHELL = is_windows and { 'bash', '-l' } or { 'zsh', '-l' },
+	DEFAULT_CWD = is_windows and wezterm.home_dir or '/Users/feb/dev',
+	DEFAULT_TERMINAL = is_windows and 'bash' or '/bin/zsh',
+	THEME = 'Gruvbox dark, hard (base16)',
+	FONT = is_windows and 'DepartureMono Nerd Font Mono' or 'Departure Mono',
+	FONT_SIZE = 18,
+	LINE_HEIGHT = 1.01,
+	OPACITY = 0.825,
+	BLUR = 150,
+	SPLIT_PANE_SIZE = 0.5,
+}
 
 local scheme = schemes[cfg.THEME]
 
@@ -30,16 +31,15 @@ config.window_close_confirmation = 'NeverPrompt'
 config.default_prog = cfg.DEFAULT_SHELL
 config.default_cwd = cfg.DEFAULT_CWD
 config.color_scheme = cfg.THEME
-config.font_dirs = { 'fonts' }
+config.font_dirs = { xdg_dir .. '/fonts' }
 
 config.default_cursor_style = "BlinkingBlock"
 config.animation_fps = 1
 config.cursor_blink_rate = 0
 
-config.font = wezterm.font(
-	cfg.FONT,
-	{ stretch = 'UltraCondensed', weight = 'Regular' }
-)
+config.font = wezterm.font_with_fallback({
+	{ family = cfg.FONT },
+})
 
 config.colors = {
 	foreground = palette.foreground,

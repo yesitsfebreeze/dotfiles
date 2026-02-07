@@ -1,25 +1,46 @@
+SELF := justfile()
+ROOT := parent_directory(justfile_directory())
+
 install:
-  @just link
+  @just --working-directory {{ROOT}} -f {{SELF}} link
+
+watch:
+  #!/usr/bin/env bash
+  echo "Watching for changes... (Ctrl+C to stop)"
+  touch ~/.config/.dotfiles_last_sync
+  while true; do
+    find src fonts -type f -newer ~/.config/.dotfiles_last_sync 2>/dev/null | head -1 | grep -q . && {
+      just --working-directory {{ROOT}} -f {{SELF}} link
+      touch ~/.config/.dotfiles_last_sync
+    }
+    sleep 1
+  done
 
 link:
   #!/usr/bin/env bash
   set -euo pipefail
   shopt -s dotglob
   find src -type f | while read -r file; do
-    just __link "$file"
+    just --working-directory {{ROOT}} -f {{SELF}} __link "$file"
   done
+  # Copy fonts folder
+  mkdir -p ~/.config/wezterm/fonts
+  for f in fonts/*; do
+    dest_file="$(eval echo ~/.config/wezterm/fonts/"$(basename "$f")")"
+    rm -f "$dest_file"
+    cp "$f" "$dest_file"
+  done
+  echo "Copied fonts"
+  touch ~/.config/.dotfiles_last_sync
 
 __link src:
   #!/usr/bin/env bash
   set -euo pipefail
-  first_line=$(head -n 1 "{{src}}")
+  first_line=$(head -n 1 "{{src}}" | tr -d '\r')
   [[ ! "${first_line:0:5}" =~ "@" ]] && exit 0
   dest=$(eval echo "${first_line#*@}")
   [ -z "$dest" ] && exit 1
-  win_dest=$(cygpath -w "$dest" 2>/dev/null || echo "$dest")
-  win_src=$(cygpath -w "$(pwd)/{{src}}" 2>/dev/null || echo "$(pwd)/{{src}}")
   mkdir -p "$(dirname "$dest")"
   rm -f "$dest"
-  cmd //c "mklink \"$win_dest\" \"$win_src\"" >/dev/null 2>&1 || \
-    cmd //c "copy /Y \"$win_src\" \"$win_dest\"" >/dev/null
-  echo "Linked $(basename "{{src}}")"
+  cp "{{src}}" "$dest"
+  echo "Copied $(basename "{{src}}")"
