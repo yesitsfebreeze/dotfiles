@@ -22,7 +22,7 @@ local HotKeys = {
 	to_normal = "<F24>",
 	leader = " ",
 	explorer = "<leader>q",
-	recentfiles = "<leader>w",
+	recentfiles = "<C-o>",
 	sessions = "<leader>e",
 	searchfile = "<leader>sf",
 	livegrep = "<leader>ss",
@@ -88,8 +88,8 @@ require('lsp').setup({
 		"rust_analyzer", -- Rust
 		"gopls",       -- Go
 		"clangd",      -- C/C++
+		"ols",         -- Odin
 		-- php		
-		-- odin		
 		-- sql
 	},
 	hotkeys = HotKeys.lsp,

@@ -102,7 +102,10 @@ function M.setup(opts)
 		},
 		messages = { enabled = true, view = 'mini', view_error = 'mini', view_warn = 'mini' },
 		popupmenu = { enabled = false },
-		views = { cmdline = { position = { row = 0, col = 0 }, size = { width = '100%', height = 'auto' } } },
+		views = { 
+			cmdline = { position = { row = 0, col = 0 }, size = { width = '100%', height = 'auto' } },
+			mini = { timeout = 5000 },
+		},
 		routes = {{ view = 'mini', filter = { event = 'msg_showmode' } }},
 	})
 end

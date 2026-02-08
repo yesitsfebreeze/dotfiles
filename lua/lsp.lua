@@ -85,7 +85,7 @@ function M.setup(opts)
 			if k.signature_help then
 				keymap.rebind('n', k.signature_help, vim.lsp.buf.signature_help, bufopts)
 			end
-			if k.type_definition then`
+			if k.type_definition then
 				keymap.rebind('n', k.type_definition, vim.lsp.buf.type_definition, bufopts)
 			end
 			if k.rename then

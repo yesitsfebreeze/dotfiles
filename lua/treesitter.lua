@@ -68,39 +68,44 @@ function M.setup(opts)
 		ensure_installed = {},
 	})
 	
-	-- Configure rainbow delimiters
-	local rainbow = require('rainbow-delimiters')
-	
-	-- Define highlight groups with custom colors
-	local highlight_names = {}
-	for i, color in ipairs(o.bracket_colors) do
-		local name = 'RainbowDelimiter' .. i
-		vim.api.nvim_set_hl(0, name, { fg = color })
-		table.insert(highlight_names, name)
-	end
-	
-	-- Reapply colors after colorscheme changes
-	vim.api.nvim_create_autocmd("ColorScheme", {
+	-- Configure rainbow delimiters (deferred to ensure plugin is loaded)
+	vim.api.nvim_create_autocmd("VimEnter", {
 		callback = function()
+			local ok, rainbow = pcall(require, 'rainbow-delimiters')
+			if not ok then return end
+			
+			-- Define highlight groups with custom colors
+			local highlight_names = {}
 			for i, color in ipairs(o.bracket_colors) do
 				local name = 'RainbowDelimiter' .. i
 				vim.api.nvim_set_hl(0, name, { fg = color })
+				table.insert(highlight_names, name)
 			end
+			
+			-- Reapply colors after colorscheme changes
+			vim.api.nvim_create_autocmd("ColorScheme", {
+				callback = function()
+					for i, color in ipairs(o.bracket_colors) do
+						local name = 'RainbowDelimiter' .. i
+						vim.api.nvim_set_hl(0, name, { fg = color })
+					end
+				end,
+			})
+			
+			vim.g.rainbow_delimiters = {
+				strategy = {
+					[''] = rainbow.strategy['global'],
+				},
+				query = {
+					[''] = 'rainbow-delimiters',
+				},
+				priority = {
+					[''] = 110,
+				},
+				highlight = highlight_names,
+			}
 		end,
 	})
-	
-	vim.g.rainbow_delimiters = {
-		strategy = {
-			[''] = rainbow.strategy['global'],
-		},
-		query = {
-			[''] = 'rainbow-delimiters',
-		},
-		priority = {
-			[''] = 110,
-		},
-		highlight = highlight_names,
-	}
 end
 
 return M
