@@ -1,6 +1,7 @@
 local M = {}
 local add = require('deps').add
 local keymap = require('keymap')
+local screen = require('screen')
 
 local defaults = {
 	hotkey = "<leader>sb"
@@ -37,16 +38,17 @@ function M.setup(opts)
 		local actions = require('telescope.actions')
 		local action_state = require('telescope.actions.state')
 		
+		local dim = screen.get().telescope
+		
 		telescope.current_buffer_fuzzy_find({
 			prompt_title = 'Search Buffer',
 			layout_strategy = 'vertical',
 			layout_config = {
 				anchor = 'E',
-				width = 0.5,
-				height = 0.9,
+				width = dim.width,
+				height = dim.height,
 				preview_height = 0.6,
 			},
-			borderchars = { '─', '│', '─', '│', '┌', '┐', '┘', '└' },
 			attach_mappings = function(prompt_bufnr, map)
 				actions.select_default:replace(function()
 					actions.close(prompt_bufnr)
@@ -55,6 +57,7 @@ function M.setup(opts)
 						vim.api.nvim_win_set_cursor(0, {selection.lnum, 0})
 					end
 				end)
+				map('i', '<esc>', actions.close)
 				return true
 			end,
 		})

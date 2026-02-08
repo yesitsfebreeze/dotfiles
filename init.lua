@@ -53,48 +53,17 @@ local HotKeys = {
 
 -- Set leader key before any plugins load
 local km = vim.keymap.set
+
 vim.g.mapleader = HotKeys.leader
 vim.g.maplocalleader = HotKeys.leader
 
--- Configure Telescope with square borders
-vim.api.nvim_create_autocmd('FileType', {
-	pattern = 'TelescopePrompt',
-	once = true,
-	callback = function()
-		require('telescope').setup({
-			defaults = {
-				borderchars = { '─', '│', '─', '│', '┌', '┐', '┘', '└' },
-			},
-		})
-	end,
-})
-
+require('telescope').setup()
 require('blockcursor').setup({colors = ModeColors})
-require('invert').setup({
-	hotkey = HotKeys.to_normal,
-	disabled = {
-		buffer_types = { "prompt", "nofile", "help", "terminal", "quickfix" },
-		file_types	= { "oil", "TelescopePrompt", "lazy", "mason" },
-	}
-})
+require('invert').setup({hotkey = HotKeys.to_normal })
 require('statusline').setup({colors = ModeColors})
 require('theme').setup()
 require('completion').setup()
-require('lsp').setup({
-	ensure_installed = {
-		"lua_ls",      -- Lua
-		"pyright",     -- Python
-		"ts_ls",       -- TypeScript/JavaScript
-		"rust_analyzer", -- Rust
-		"gopls",       -- Go
-		"clangd",      -- C/C++
-		"ols",         -- Odin
-		-- php		
-		-- sql
-	},
-	hotkeys = HotKeys.lsp,
-})
-
+require('lsp').setup({hotkeys = HotKeys.lsp})
 require('treesitter').setup({bracket_colors = BracketColors})
 require('gutter').setup({colors = ModeColors})
 require('gittools').setup({hotkeys = HotKeys.gittools})
@@ -127,6 +96,10 @@ keymap.rebind({'i', 'n'}, '<C-k>', function()
 	vim.schedule(function() vim.api.nvim_feedkeys(':', 'n', false) end)
 end, { noremap = true, silent = true, desc = 'Command mode' })
 
--- ESC: Clear search highlight
-keymap.bind('n', '<Esc>', '<Cmd>nohlsearch<CR>', { silent = true })
-keymap.bind('i', '<Esc>', '<Cmd>nohlsearch<CR>', { silent = true })
+-- highlight clear on ESC
+keymap.bind({'n', 'i'}, '<Esc>', function()
+	local buf = vim.api.nvim_get_current_buf()
+	if not vim.api.nvim_buf_is_valid(buf) then return end
+	if vim.bo[buf].buftype ~= "" then return end
+	vim.cmd('nohlsearch')
+end, { silent = true })

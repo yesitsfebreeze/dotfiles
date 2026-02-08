@@ -25,65 +25,53 @@ g.leave_normal = g.leave_normal or false
 
 local defaults = {
 	hotkey = "<C-Space>",
-	disabled = {
-		buffer_types = { "prompt", "nofile", "help", "terminal", "quickfix" },
-		file_types	 = {},
-	},
 }
-
-local function to_set(list)
-	local set = {}
-	for _, v in ipairs(list or {}) do
-		set[v] = true
-	end
-	return set
-end
 
 local function merge_opts(user)
 	user = user or {}
-	local d = user.disabled or {}
 	return {
 		hotkey = user.hotkey or defaults.hotkey,
-		disabled = {
-			buffer_types = d.buffer_types or defaults.disabled.buffer_types,
-			file_types   = d.file_types   or defaults.disabled.file_types,
-		},
 	}
 end
 
-local function is_disabled(buf, bt_set, ft_set)
-	if not api.nvim_buf_is_valid(buf) then return true end
-	local bt = bo[buf].buftype
-	if bt ~= "" and bt_set[bt] then return true end
-	local ft = bo[buf].filetype
-	if ft ~= "" and ft_set[ft] then return true end
-	return false
+local function is_enabled(buf)
+	if not api.nvim_buf_is_valid(buf) then return false end
+	local b = bo[buf]
+	return b.buftype == "" and b.filetype ~= ""
 end
 
 function M.setup(opts)
 	local o = merge_opts(opts)
 
 	local hotkey = o.hotkey
-	local bt_set = to_set(o.disabled.buffer_types)
-	local ft_set = to_set(o.disabled.file_types)
 
 	local function enabled()
-		return not is_disabled(api.nvim_get_current_buf(), bt_set, ft_set)
+		return is_enabled(api.nvim_get_current_buf())
 	end
 
 	local last_press_time = 0
 	local double_tap_threshold = 500  -- milliseconds
 
 	km.set("i", hotkey, function()
-		if not enabled() then cmd("stopinsert") return end
+		if not enabled() then return end
 		g.leave_normal = false
 		cmd("stopinsert")
 	end, { noremap = true, silent = true })
 
-	km.set("i", "<Esc>", function()
-		if not enabled() then cmd("stopinsert") return end
-		-- Do nothing, stay in insert mode
-	end, { noremap = true, silent = true })
+	-- Only map ESC in insert mode for enabled buffers
+	api.nvim_create_autocmd("BufEnter", {
+		callback = function()
+			local buf = api.nvim_get_current_buf()
+			if is_enabled(buf) then
+				-- In file buffers: ESC does nothing (stay in insert)
+				vim.keymap.set("i", "<Esc>", function() end, { buffer = buf, noremap = true, silent = true })
+			else
+				-- In special buffers: remove our ESC mapping (let vim handle it)
+				pcall(vim.keymap.del, "i", "<Esc>", { buffer = buf })
+			end
+		end,
+	})
+	
 	api.nvim_create_autocmd("ModeChanged", {
 		pattern = "*:n",
 		callback = function()
@@ -96,7 +84,7 @@ function M.setup(opts)
 
 	km.set("n", "<Esc>", function()
 		if not bo.modifiable then return end
-		if not enabled() then cmd("normal! <Esc>") return end
+		if not enabled() then return end
 		g.leave_normal = true
 		cmd("startinsert")
 	end, { noremap = true, silent = true })

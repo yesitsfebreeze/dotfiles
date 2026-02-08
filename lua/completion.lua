@@ -85,6 +85,11 @@ function M.setup(opts)
 			},
 		})
 		
+		-- Disable completion in Telescope prompts
+		cmp.setup.filetype('TelescopePrompt', {
+			enabled = false,
+		})
+		
 		-- Transparent backgrounds
 		if o.transparent then
 			vim.api.nvim_create_autocmd('ColorScheme', {

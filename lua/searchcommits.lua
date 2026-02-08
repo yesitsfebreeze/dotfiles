@@ -1,6 +1,7 @@
 local M = {}
 local add = require('deps').add
 local keymap = require('keymap')
+local screen = require('screen')
 
 local defaults = {
 	hotkey = "<leader>sc"
@@ -35,13 +36,15 @@ function M.setup(opts)
 		
 		local telescope = require('telescope.builtin')
 		
+		local dim = screen.get().telescope
+		
 		telescope.git_commits({
 			prompt_title = 'Git Commits',
 			layout_strategy = 'vertical',
 			layout_config = {
 				anchor = 'E',
-				width = 0.5,
-				height = 0.9,
+				width = dim.width,
+				height = dim.height,
 				preview_height = 0.6,
 			},
 			borderchars = { '─', '│', '─', '│', '┌', '┐', '┘', '└' },

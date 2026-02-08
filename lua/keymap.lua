@@ -17,7 +17,15 @@ local fn = vim.fn
 function M.bind(mode, lhs, rhs, opts)
 	opts = opts or {}
 	
-	-- Get existing mapping
+	-- Handle multiple modes
+	if type(mode) == 'table' then
+		for _, m in ipairs(mode) do
+			M.bind(m, lhs, rhs, opts)
+		end
+		return
+	end
+	
+	-- Get existing mapping for single mode
 	local existing = fn.maparg(lhs, mode, false, true)
 	
 	if not existing or vim.tbl_isempty(existing) then

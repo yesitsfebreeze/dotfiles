@@ -9,6 +9,7 @@
 
 local add = require('deps').add
 local keymap = require('keymap')
+local screen = require('screen')
 
 local M = {}
 
@@ -51,16 +52,17 @@ function M.setup(opts)
 		local actions = require('telescope.actions')
 		local action_state = require('telescope.actions.state')
 		
+		local dim = screen.get().telescope
+		
 		telescope.find_files({
 			prompt_title = 'Find Files',
 			layout_strategy = 'vertical',
 			layout_config = {
 				anchor = 'E',
-				width = 0.5,
-				height = 0.9,
+				width = dim.width,
+				height = dim.height,
 				preview_height = 0.6,
 			},
-			borderchars = { '─', '│', '─', '│', '┌', '┐', '┘', '└' },
 			attach_mappings = function(prompt_bufnr, map)
 				actions.select_default:replace(function()
 					actions.close(prompt_bufnr)
@@ -69,6 +71,8 @@ function M.setup(opts)
 						vim.cmd('edit ' .. selection.path)
 					end
 				end)
+				-- Explicitly map ESC to close
+				map('i', '<esc>', actions.close)
 				return true
 			end,
 		})
