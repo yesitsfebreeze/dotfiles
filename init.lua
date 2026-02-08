@@ -1,4 +1,6 @@
-local ModeColors = {
+local vim = vim  or {}
+
+ local ModeColors = {
 	i = "#5ad2e4",
 	n = "#56ef9b",
 	v = "#e6f05a",
@@ -7,25 +9,24 @@ local ModeColors = {
 }
 
 local BracketColors = {
+	'#FFFFFF',
 	'#6ba6f3',
-	'#e3d96a',
-	'#ef805f',
+	'#989898',
+	'#FFFFFF',
 	'#6ba6f3',
-	'#e3d96a',
-	'#ef805f',
-	'#6ba6f3',
+	'#989898',
+	'#FFFFFF',
 }
 
 local keymap = require('keymap')
 
 local HotKeys = {
+	quit = "<C-q>",
+	hard_quit = "<C-ESC>",
 	to_normal = "<F24>",
 	leader = " ",
-	explorer = "<leader>q",
-	recentfiles = "<C-o>",
-	sessions = "<leader>e",
-	searchfile = "<leader>sf",
-	livegrep = "<leader>ss",
+	explorer = "<C-e>",
+	smartsearch = "<C-o>",
 	lsp = {
 		declaration = "gD",
 		definition = "gd",
@@ -68,14 +69,8 @@ require('treesitter').setup({bracket_colors = BracketColors})
 require('gutter').setup({colors = ModeColors})
 require('gittools').setup({hotkeys = HotKeys.gittools})
 require('explorer').setup({hotkey = HotKeys.explorer})
-require('recentfiles').setup({hotkey = HotKeys.recentfiles})
-require('sessions').setup({hotkey = HotKeys.sessions})
-require('searchfile').setup({hotkey = HotKeys.searchfile})
-require('livegrep').setup({hotkey = HotKeys.livegrep})
-require('searchbuffer').setup()
-require('searchcommits').setup()
-require('diagnostics').setup()
-require('buffers').setup()
+require('smartsearch').setup({hotkey = HotKeys.smartsearch})
+require('sessions').setup()
 require('whitespace').setup()
 require('century').setup()
 
@@ -103,3 +98,12 @@ keymap.bind({'n', 'i'}, '<Esc>', function()
 	if vim.bo[buf].buftype ~= "" then return end
 	vim.cmd('nohlsearch')
 end, { silent = true })
+
+-- Quit commands
+keymap.rebind({'n', 'i'}, '<C-q>', function()
+	vim.cmd('confirm quit')
+end, { noremap = true, silent = true, desc = 'Quit (with save prompt)' })
+
+keymap.rebind({'n', 'i'}, '<C-Esc>', function()
+	vim.cmd('quitall!')
+end, { noremap = true, silent = true, desc = 'Quit without saving' })

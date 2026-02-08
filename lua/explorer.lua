@@ -11,6 +11,7 @@
 
 local add = require('deps').add
 local keymap = require('keymap')
+local screen = require('screen')
 
 local M = {}
 
@@ -92,7 +93,7 @@ function M.setup(opts)
 			},
 		},
 		float = {
-			padding = 2,
+			padding = 0,
 			max_width = 0,
 			max_height = 0,
 			border = "single",
@@ -100,12 +101,13 @@ function M.setup(opts)
 				winblend = 0,
 			},
 			override = function(conf)
-				local screen_w = vim.o.columns
-				local screen_h = vim.o.lines
-				conf.width = math.floor(screen_w / 2)
-				conf.height = screen_h - 2
-				conf.col = math.floor(screen_w / 2)
+				local dims = screen.get()
+				local tel = dims.telescope
+				conf.width = tel.width
+				conf.height = tel.height
+				conf.col = dims.width - tel.width
 				conf.row = 0
+
 				return conf
 			end,
 		},

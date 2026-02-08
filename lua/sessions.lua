@@ -94,27 +94,6 @@ function M.setup(opts)
 	local o = merge_opts(opts)
 	
 	add({ source = 'nvim-telescope/telescope.nvim', depends = { 'nvim-lua/plenary.nvim' } })
-	
-	require('telescope').setup({
-		defaults = {
-			layout_strategy = 'vertical',
-			layout_config = {
-				anchor = 'E',
-				width = function()
-					return math.floor(vim.o.columns / 2)
-				end,
-				height = function()
-					return vim.o.lines - 2
-				end,
-			},
-			mappings = {
-				i = {
-					["<C-j>"] = "move_selection_next",
-					["<C-k>"] = "move_selection_previous",
-				},
-			},
-		},
-	})
 
 	ensure_sessions_dir()
 
@@ -180,87 +159,6 @@ function M.setup(opts)
 			end
 		end,
 	})
-
-	-- Bind session picker to hotkey
-	keymap.rebind({'n', 'i'}, o.hotkey, function()
-		M.picker()
-	end, { noremap = true, silent = true, desc = 'Open session picker' })
-end
-
--- Telescope picker for sessions
-function M.picker()
-	-- Close any Oil floating windows
-	for _, win in ipairs(vim.api.nvim_list_wins()) do
-		if vim.api.nvim_win_is_valid(win) then
-			local buf = vim.api.nvim_win_get_buf(win)
-			if vim.api.nvim_buf_is_valid(buf) then
-				local ft = vim.bo[buf].filetype
-				if ft == 'oil' then
-					vim.api.nvim_win_close(win, true)
-				end
-			end
-		end
-	end
-	
-	local pickers = require('telescope.pickers')
-	local finders = require('telescope.finders')
-	local conf = require('telescope.config').values
-	local actions = require('telescope.actions')
-	local action_state = require('telescope.actions.state')
-
-	local sessions = list_sessions()
-
-	pickers.new({}, {
-		prompt_title = 'Sessions',
-		finder = finders.new_table({
-			results = sessions,
-			entry_maker = function(entry)
-				return {
-					value = entry,
-					display = entry.display,
-					ordinal = entry.display,
-				}
-			end,
-		}),
-		sorter = conf.generic_sorter({}),
-		attach_mappings = function(prompt_bufnr, map)
-			actions.select_default:replace(function()
-				actions.close(prompt_bufnr)
-				local selection = action_state.get_selected_entry()
-				if selection then
-					-- Close all buffers
-					vim.cmd('%bdelete!')
-					-- Load the selected session
-					vim.cmd('silent! source ' .. fn.fnameescape(selection.value.file))
-				end
-			end)
-
-			-- Explicitly map ESC to close
-			map('i', '<esc>', actions.close)
-
-			-- Add delete mapping
-			map('i', '<C-d>', function()
-				local selection = action_state.get_selected_entry()
-				if selection then
-					delete_session(selection.value.name)
-					-- Refresh the picker
-					local current_picker = action_state.get_current_picker(prompt_bufnr)
-					current_picker:refresh(finders.new_table({
-						results = list_sessions(),
-						entry_maker = function(entry)
-							return {
-								value = entry,
-								display = entry.display,
-								ordinal = entry.display,
-							}
-						end,
-					}))
-				end
-			end)
-
-			return true
-		end,
-	}):find()
 end
 
 return M

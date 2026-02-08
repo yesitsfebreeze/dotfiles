@@ -37,7 +37,21 @@ end
 local function is_enabled(buf)
 	if not api.nvim_buf_is_valid(buf) then return false end
 	local b = bo[buf]
-	return b.buftype == "" and b.filetype ~= ""
+	
+	-- Explicitly exclude special filetypes
+	local excluded_filetypes = { 'oil', 'TelescopePrompt', 'lazy', 'mason', 'help' }
+	for _, ft in ipairs(excluded_filetypes) do
+		if b.filetype == ft then return false end
+	end
+	
+	-- Explicitly exclude special buffer types
+	local excluded_buftypes = { 'prompt', 'nofile', 'help', 'terminal', 'quickfix' }
+	for _, bt in ipairs(excluded_buftypes) do
+		if b.buftype == bt then return false end
+	end
+	
+	-- Only enable for normal file buffers
+	return b.buftype == ""
 end
 
 function M.setup(opts)
