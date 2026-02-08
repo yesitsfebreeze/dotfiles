@@ -1,30 +1,16 @@
--- File finder using Telescope:
--- - Search for files by name
--- - Respects .gitignore
---
--- Options:
--- {
---   hotkey = "<leader>sf"
--- }
-
+local M = {}
 local add = require('deps').add
 local keymap = require('keymap')
 
-local M = {}
-
 local defaults = {
-	hotkey = "<leader>sf"
+	hotkey = "<leader>sc"
 }
 
 local function merge_opts(user)
-	user = user or {}
-	return {
-		hotkey = user.hotkey or defaults.hotkey
-	}
+	return vim.tbl_deep_extend('force', defaults, user or {})
 end
 
 local function close_oil_windows()
-	-- Close any Oil floating windows
 	for _, win in ipairs(vim.api.nvim_list_wins()) do
 		if vim.api.nvim_win_is_valid(win) then
 			local buf = vim.api.nvim_win_get_buf(win)
@@ -48,11 +34,9 @@ function M.setup(opts)
 		close_oil_windows()
 		
 		local telescope = require('telescope.builtin')
-		local actions = require('telescope.actions')
-		local action_state = require('telescope.actions.state')
 		
-		telescope.find_files({
-			prompt_title = 'Find Files',
+		telescope.git_commits({
+			prompt_title = 'Git Commits',
 			layout_strategy = 'vertical',
 			layout_config = {
 				anchor = 'E',
@@ -61,18 +45,8 @@ function M.setup(opts)
 				preview_height = 0.6,
 			},
 			borderchars = { '─', '│', '─', '│', '┌', '┐', '┘', '└' },
-			attach_mappings = function(prompt_bufnr, map)
-				actions.select_default:replace(function()
-					actions.close(prompt_bufnr)
-					local selection = action_state.get_selected_entry()
-					if selection then
-						vim.cmd('edit ' .. selection.path)
-					end
-				end)
-				return true
-			end,
 		})
-	end, { noremap = true, silent = true, desc = 'Find files' })
+	end, { noremap = true, silent = true, desc = 'Search commits' })
 end
 
 return M

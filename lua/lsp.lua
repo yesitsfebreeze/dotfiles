@@ -1,6 +1,7 @@
 local M = {}
 local add = require('deps').add
 local later = require('deps').later
+local keymap = require('keymap')
 
 local defaults = {
 	-- Auto-install these servers when detected
@@ -16,7 +17,7 @@ local defaults = {
 	border = "single",
 	transparent = true,
 	-- Keymappings
-	keys = {
+	hotkeys = {
 		declaration = "gD",
 		definition = "gd",
 		hover = "K",
@@ -66,51 +67,51 @@ function M.setup(opts)
 		-- Configure LSP settings for all servers
 		local on_attach = function(client, bufnr)
 			local bufopts = { noremap = true, silent = true, buffer = bufnr }
-			local k = o.keys
+			local k = o.hotkeys
 			
 			-- Key mappings for LSP features
 			if k.declaration then
-				vim.keymap.set('n', k.declaration, vim.lsp.buf.declaration, bufopts)
+				keymap.rebind('n', k.declaration, vim.lsp.buf.declaration, bufopts)
 			end
 			if k.definition then
-				vim.keymap.set('n', k.definition, vim.lsp.buf.definition, bufopts)
+				keymap.rebind('n', k.definition, vim.lsp.buf.definition, bufopts)
 			end
 			if k.hover then
-				vim.keymap.set('n', k.hover, vim.lsp.buf.hover, bufopts)
+				keymap.rebind('n', k.hover, vim.lsp.buf.hover, bufopts)
 			end
 			if k.implementation then
-				vim.keymap.set('n', k.implementation, vim.lsp.buf.implementation, bufopts)
+				keymap.rebind('n', k.implementation, vim.lsp.buf.implementation, bufopts)
 			end
 			if k.signature_help then
-				vim.keymap.set('n', k.signature_help, vim.lsp.buf.signature_help, bufopts)
+				keymap.rebind('n', k.signature_help, vim.lsp.buf.signature_help, bufopts)
 			end
-			if k.type_definition then
-				vim.keymap.set('n', k.type_definition, vim.lsp.buf.type_definition, bufopts)
+			if k.type_definition then`
+				keymap.rebind('n', k.type_definition, vim.lsp.buf.type_definition, bufopts)
 			end
 			if k.rename then
-				vim.keymap.set('n', k.rename, vim.lsp.buf.rename, bufopts)
+				keymap.rebind('n', k.rename, vim.lsp.buf.rename, bufopts)
 			end
 			if k.code_action then
-				vim.keymap.set('n', k.code_action, vim.lsp.buf.code_action, bufopts)
+				keymap.rebind('n', k.code_action, vim.lsp.buf.code_action, bufopts)
 			end
 			if k.references then
-				vim.keymap.set('n', k.references, vim.lsp.buf.references, bufopts)
+				keymap.rebind('n', k.references, vim.lsp.buf.references, bufopts)
 			end
 			if k.format then
-				vim.keymap.set('n', k.format, function()
+				keymap.rebind('n', k.format, function()
 					vim.lsp.buf.format({ async = true })
 				end, bufopts)
 			end
 			
 			-- Diagnostic navigation
 			if k.diagnostic_prev then
-				vim.keymap.set('n', k.diagnostic_prev, vim.diagnostic.goto_prev, bufopts)
+				keymap.rebind('n', k.diagnostic_prev, vim.diagnostic.goto_prev, bufopts)
 			end
 			if k.diagnostic_next then
-				vim.keymap.set('n', k.diagnostic_next, vim.diagnostic.goto_next, bufopts)
+				keymap.rebind('n', k.diagnostic_next, vim.diagnostic.goto_next, bufopts)
 			end
 			if k.diagnostic_float then
-				vim.keymap.set('n', k.diagnostic_float, vim.diagnostic.open_float, bufopts)
+				keymap.rebind('n', k.diagnostic_float, vim.diagnostic.open_float, bufopts)
 			end
 		end
 		
@@ -176,7 +177,14 @@ function M.setup(opts)
 				prefix = '●',
 				spacing = 4,
 			},
-			signs = true,
+			signs = {
+				text = {
+					[vim.diagnostic.severity.ERROR] = "✘",
+					[vim.diagnostic.severity.WARN] = "▲",
+					[vim.diagnostic.severity.HINT] = "⚑",
+					[vim.diagnostic.severity.INFO] = "»",
+				},
+			},
 			underline = true,
 			update_in_insert = true,
 			severity_sort = true,
@@ -185,18 +193,6 @@ function M.setup(opts)
 				source = 'if_many',
 			},
 		})
-		
-		-- Diagnostic signs
-		local signs = {
-			Error = "✘",
-			Warn = "▲",
-			Hint = "⚑",
-			Info = "»",
-		}
-		for type, icon in pairs(signs) do
-			local hl = "DiagnosticSign" .. type
-			vim.fn.sign_define(hl, { text = icon, texthl = hl, numhl = hl })
-		end
 		
 		-- LSP handlers with square borders
 		vim.lsp.handlers["textDocument/hover"] = vim.lsp.with(
@@ -213,47 +209,47 @@ function M.setup(opts)
 			
 			-- Key mappings for LSP features
 			if k.declaration then
-				vim.keymap.set('n', k.declaration, vim.lsp.buf.declaration, bufopts)
+				keymap.rebind('n', k.declaration, vim.lsp.buf.declaration, bufopts)
 			end
 			if k.definition then
-				vim.keymap.set('n', k.definition, vim.lsp.buf.definition, bufopts)
+				keymap.rebind('n', k.definition, vim.lsp.buf.definition, bufopts)
 			end
 			if k.hover then
-				vim.keymap.set('n', k.hover, vim.lsp.buf.hover, bufopts)
+				keymap.rebind('n', k.hover, vim.lsp.buf.hover, bufopts)
 			end
 			if k.implementation then
-				vim.keymap.set('n', k.implementation, vim.lsp.buf.implementation, bufopts)
+				keymap.rebind('n', k.implementation, vim.lsp.buf.implementation, bufopts)
 			end
 			if k.signature_help then
-				vim.keymap.set('n', k.signature_help, vim.lsp.buf.signature_help, bufopts)
+				keymap.rebind('n', k.signature_help, vim.lsp.buf.signature_help, bufopts)
 			end
 			if k.type_definition then
-				vim.keymap.set('n', k.type_definition, vim.lsp.buf.type_definition, bufopts)
+				keymap.rebind('n', k.type_definition, vim.lsp.buf.type_definition, bufopts)
 			end
 			if k.rename then
-				vim.keymap.set('n', k.rename, vim.lsp.buf.rename, bufopts)
+				keymap.rebind('n', k.rename, vim.lsp.buf.rename, bufopts)
 			end
 			if k.code_action then
-				vim.keymap.set('n', k.code_action, vim.lsp.buf.code_action, bufopts)
+				keymap.rebind('n', k.code_action, vim.lsp.buf.code_action, bufopts)
 			end
 			if k.references then
-				vim.keymap.set('n', k.references, vim.lsp.buf.references, bufopts)
+				keymap.rebind('n', k.references, vim.lsp.buf.references, bufopts)
 			end
 			if k.format then
-				vim.keymap.set('n', k.format, function()
+				keymap.rebind('n', k.format, function()
 					vim.lsp.buf.format({ async = true })
 				end, bufopts)
 			end
 			
 			-- Diagnostic navigation
 			if k.diagnostic_prev then
-				vim.keymap.set('n', k.diagnostic_prev, vim.diagnostic.goto_prev, bufopts)
+				keymap.rebind('n', k.diagnostic_prev, vim.diagnostic.goto_prev, bufopts)
 			end
 			if k.diagnostic_next then
-				vim.keymap.set('n', k.diagnostic_next, vim.diagnostic.goto_next, bufopts)
+				keymap.rebind('n', k.diagnostic_next, vim.diagnostic.goto_next, bufopts)
 			end
 			if k.diagnostic_float then
-				vim.keymap.set('n', k.diagnostic_float, vim.diagnostic.open_float, bufopts)
+				keymap.rebind('n', k.diagnostic_float, vim.diagnostic.open_float, bufopts)
 			end
 		end
 		

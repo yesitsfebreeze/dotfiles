@@ -8,6 +8,7 @@
 -- }
 
 local add = require('deps').add
+local keymap = require('keymap')
 
 local M = {}
 
@@ -43,7 +44,7 @@ function M.setup(opts)
 	add({ source = 'nvim-telescope/telescope.nvim' })
 	add({ source = 'nvim-lua/plenary.nvim' })
 	
-	vim.keymap.set({'n', 'i'}, o.hotkey, function()
+	keymap.rebind({'n', 'i'}, o.hotkey, function()
 		close_oil_windows()
 		
 		local telescope = require('telescope.builtin')

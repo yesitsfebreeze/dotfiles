@@ -136,24 +136,29 @@ function M.setup(opts)
 	-- Switch between relative and absolute based on mode
 	api.nvim_create_autocmd("ModeChanged", {
 		callback = function()
-			local mode = api.nvim_get_mode().mode
-			
-			-- Set line number style
-			if mode == "i" then
-				vim.opt.relativenumber = false
-				set_line_number_color(o.colors.i)
-			elseif mode == "n" then
-				vim.opt.relativenumber = true
-				set_line_number_color(o.colors.n)
-			elseif mode:match("^[vV]") or mode == "\22" then
-				vim.opt.relativenumber = true
-				set_line_number_color(o.colors.v)
-			elseif mode == "R" or mode == "Rv" then
-				vim.opt.relativenumber = false
-				set_line_number_color(o.colors.r)
-			elseif mode == "c" then
-				set_line_number_color(o.colors.c)
-			end
+			vim.schedule(function()
+				local mode = api.nvim_get_mode().mode
+				
+				-- Set line number style
+				if mode == "i" then
+					vim.opt.relativenumber = false
+					set_line_number_color(o.colors.i)
+				elseif mode == "n" then
+					vim.opt.relativenumber = true
+					set_line_number_color(o.colors.n)
+				elseif mode:match("^[vV]") or mode == "\22" then
+					vim.opt.relativenumber = true
+					set_line_number_color(o.colors.v)
+				elseif mode == "R" or mode == "Rv" then
+					vim.opt.relativenumber = false
+					set_line_number_color(o.colors.r)
+				elseif mode == "c" then
+					set_line_number_color(o.colors.c)
+				end
+				
+				-- Force redraw to ensure color change is visible
+				vim.cmd('redraw')
+			end)
 		end,
 	})
 

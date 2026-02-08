@@ -12,6 +12,7 @@
 -- }
 
 local add = require('deps').add
+local keymap = require('keymap')
 
 local M = {}
 
@@ -170,7 +171,7 @@ function M.setup(opts)
 	})
 
 	-- Bind session picker to hotkey
-	vim.keymap.set({'n', 'i'}, o.hotkey, function()
+	keymap.rebind({'n', 'i'}, o.hotkey, function()
 		M.picker()
 	end, { noremap = true, silent = true, desc = 'Open session picker' })
 end

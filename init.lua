@@ -3,18 +3,20 @@ local ModeColors = {
 	n = "#56ef9b",
 	v = "#e6f05a",
 	r = "#e84e55",
-	c = "#dadada",
+	c = "#f6ae57",
 }
 
-local RainbowBrackets = {
-	'#ef5f6b',
-	'#f2ae49',
-	'#5a89d8',
-	'#f99157',
-	'#99c794',
-	'#c594c5',
-	'#5fb3b3',
+local BracketColors = {
+	'#6ba6f3',
+	'#e3d96a',
+	'#ef805f',
+	'#6ba6f3',
+	'#e3d96a',
+	'#ef805f',
+	'#6ba6f3',
 }
+
+local keymap = require('keymap')
 
 local HotKeys = {
 	to_normal = "<F24>",
@@ -39,6 +41,14 @@ local HotKeys = {
 		diagnostic_next = "]d",
 		diagnostic_float = "<leader>d",
 	},
+	gittools = {
+		blame = "<leader>gb",
+		diff = "<leader>gd",
+		commits = "<leader>gc",
+		stage_hunk = "<leader>gs",
+		unstage_hunk = "<leader>gu",
+		reset_hunk = "<leader>gr",
+	}
 }
 
 -- Set leader key before any plugins load
@@ -69,6 +79,7 @@ require('invert').setup({
 })
 require('statusline').setup({colors = ModeColors})
 require('theme').setup()
+require('completion').setup()
 require('lsp').setup({
 	ensure_installed = {
 		"lua_ls",      -- Lua
@@ -77,24 +88,45 @@ require('lsp').setup({
 		"rust_analyzer", -- Rust
 		"gopls",       -- Go
 		"clangd",      -- C/C++
-		-- php
-		-- odin
+		-- php		
+		-- odin		
 		-- sql
 	},
-	keys = HotKeys.lsp,
+	hotkeys = HotKeys.lsp,
 })
-require('treesitter').setup()
+
+require('treesitter').setup({bracket_colors = BracketColors})
 require('gutter').setup({colors = ModeColors})
+require('gittools').setup({hotkeys = HotKeys.gittools})
 require('explorer').setup({hotkey = HotKeys.explorer})
 require('recentfiles').setup({hotkey = HotKeys.recentfiles})
 require('sessions').setup({hotkey = HotKeys.sessions})
 require('searchfile').setup({hotkey = HotKeys.searchfile})
 require('livegrep').setup({hotkey = HotKeys.livegrep})
+require('searchbuffer').setup()
+require('searchcommits').setup()
+require('diagnostics').setup()
+require('buffers').setup()
 require('whitespace').setup()
 require('century').setup()
 
-km({'i', 'n'}, '<C-k>', function()
+-- Quick Actions
+-- <leader>r: Reload config
+keymap.rebind({'i', 'n'}, '<leader>r', function()
+	vim.cmd('source ~/.config/nvim/init.lua')
+	vim.notify('Config reloaded', vim.log.levels.INFO)
+end, { noremap = true, silent = true, desc = 'Reload config' })
+
+-- <leader>p: Paste from system clipboard (insert mode)
+keymap.rebind('i', '<leader>p', '<C-r>+', { noremap = true, desc = 'Paste from clipboard' })
+
+-- Command mode shortcut
+keymap.rebind({'i', 'n'}, '<C-k>', function()
 	vim.g.leave_normal = false
 	vim.cmd('stopinsert')
 	vim.schedule(function() vim.api.nvim_feedkeys(':', 'n', false) end)
 end, { noremap = true, silent = true, desc = 'Command mode' })
+
+-- ESC: Clear search highlight
+keymap.bind('n', '<Esc>', '<Cmd>nohlsearch<CR>', { silent = true })
+keymap.bind('i', '<Esc>', '<Cmd>nohlsearch<CR>', { silent = true })

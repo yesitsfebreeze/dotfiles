@@ -21,7 +21,7 @@ local add = require('deps').add
 local M = {}
 
 local defaults = {
-	rainbow = {
+	bracket_colors = {
 		'#ef5f6b',
 		'#f2ae49',
 		'#5a89d8',
@@ -35,7 +35,7 @@ local defaults = {
 local function merge_opts(user)
 	user = user or {}
 	return {
-		rainbow = user.rainbow or defaults.rainbow
+		bracket_colors = user.bracket_colors or defaults.bracket_colors
 	}
 end
 
@@ -73,7 +73,7 @@ function M.setup(opts)
 	
 	-- Define highlight groups with custom colors
 	local highlight_names = {}
-	for i, color in ipairs(o.rainbow) do
+	for i, color in ipairs(o.bracket_colors) do
 		local name = 'RainbowDelimiter' .. i
 		vim.api.nvim_set_hl(0, name, { fg = color })
 		table.insert(highlight_names, name)
@@ -82,7 +82,7 @@ function M.setup(opts)
 	-- Reapply colors after colorscheme changes
 	vim.api.nvim_create_autocmd("ColorScheme", {
 		callback = function()
-			for i, color in ipairs(o.rainbow) do
+			for i, color in ipairs(o.bracket_colors) do
 				local name = 'RainbowDelimiter' .. i
 				vim.api.nvim_set_hl(0, name, { fg = color })
 			end

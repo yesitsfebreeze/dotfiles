@@ -16,7 +16,7 @@
 local M = {}
 
 local defaults = {
-    tab = '➔ ',
+    tab = '⇥ ',
     trail = '·',
     extends = '⇠',
     precedes = '⇢',

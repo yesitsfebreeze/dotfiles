@@ -10,6 +10,7 @@
 -- }
 
 local add = require('deps').add
+local keymap = require('keymap')
 
 local M = {}
 
@@ -136,7 +137,7 @@ function M.setup(opts)
 	})
 
 	-- Bind explorer to hotkey (opens in floating window)
-	vim.keymap.set({'n', 'i'}, o.hotkey, function()
+	keymap.rebind({'n', 'i'}, o.hotkey, function()
 		vim.cmd('stopinsert')
 		
 		-- Close any Telescope windows

@@ -8,6 +8,7 @@
 -- }
 
 local add = require('deps').add
+local keymap = require('keymap')
 
 local M = {}
 
@@ -106,7 +107,7 @@ function M.setup(opts)
 	add({ source = 'nvim-telescope/telescope.nvim', depends = { 'nvim-lua/plenary.nvim' } })
 	
 	-- Set up hotkey
-	vim.keymap.set({'n', 'i'}, o.hotkey, function()
+	keymap.rebind({'n', 'i'}, o.hotkey, function()
 		vim.cmd('stopinsert')
 		vim.schedule(open_recent_files_picker)
 	end, { noremap = true, silent = true, desc = 'Open recent files' })

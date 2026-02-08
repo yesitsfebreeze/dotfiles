@@ -82,17 +82,22 @@ function M.setup(opts)
 	})
 
 	local pad = '    '
-		require('noice').setup({
+	
+	-- Set highlight before noice setup
+	vim.api.nvim_set_hl(0, 'NoiceCmdlineIconCommand', { fg = o.colors.c, bold = true })
+	vim.api.nvim_set_hl(0, 'NoiceCmdlineIconSearch', { fg = o.colors.c, bold = true })
+	
+	require('noice').setup({
 		cmdline = { 
 			enabled = true, 
 			view = 'cmdline',
 			format = {
-				cmdline = { icon = pad..':' },
-				search_down = { icon = pad..'/' },
-				search_up = { icon = pad..'?' },
-				filter = { icon = pad..'!' },
-				lua = { icon = pad..' :lua' },
-				help = { icon = pad..':help' },
+				cmdline = { pattern = '^:', icon = pad..'C', lang = 'vim', icon_hl_group = 'NoiceCmdlineIconCommand' },
+				search_down = { kind = 'search', pattern = '^/', icon = pad..'/', lang = 'regex', icon_hl_group = 'NoiceCmdlineIconSearch' },
+				search_up = { kind = 'search', pattern = '^%?', icon = pad..'?', lang = 'regex', icon_hl_group = 'NoiceCmdlineIconSearch' },
+				filter = { pattern = '^:%s*!', icon = pad..'!', lang = 'bash', icon_hl_group = 'NoiceCmdlineIconCommand' },
+				lua = { pattern = '^:%s*lua%s+', icon = pad..' :lua', lang = 'lua', icon_hl_group = 'NoiceCmdlineIconCommand' },
+				help = { pattern = '^:%s*he?l?p?%s+', icon = pad..':help', icon_hl_group = 'NoiceCmdlineIconCommand' },
 			}
 		},
 		messages = { enabled = true, view = 'mini', view_error = 'mini', view_warn = 'mini' },
