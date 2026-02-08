@@ -1,5 +1,3 @@
---@~/.config/nvim/lua/statusline.lua
---
 -- Statusline setup using lualine and noice:
 -- - Displays mode indicator with custom colors
 -- - Shows branch, diff, diagnostics, filetype, position, and time

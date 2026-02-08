@@ -1,5 +1,3 @@
---@~/.config/nvim/lua/recentfiles.lua
---
 -- Recent files picker using Telescope:
 -- - Shows recently opened files
 -- - Filters out non-existent files

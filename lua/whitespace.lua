@@ -1,5 +1,3 @@
---@~/.config/nvim/lua/whitespace.lua
---
 -- Whitespace and indentation settings:
 -- - Tab configuration
 -- - Whitespace visualization

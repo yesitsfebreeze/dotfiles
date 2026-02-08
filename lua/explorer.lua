@@ -1,5 +1,3 @@
---@~/.config/nvim/lua/explorer.lua
---
 -- File explorer setup using Oil:
 -- - Directory editing as a buffer
 -- - Navigate filesystems like a normal buffer

@@ -1,5 +1,3 @@
---@~/.config/nvim/lua/invert.lua
---
 -- Invert Vim modal logic:
 -- - Default state is INSERT
 -- - NORMAL persists once explicitly armed
@@ -89,6 +87,7 @@ function M.setup(opts)
 	api.nvim_create_autocmd("ModeChanged", {
 		pattern = "*:n",
 		callback = function()
+			if not bo.modifiable then return end
 			if not enabled() then return end
 			if not g.leave_normal then return end
 			sch(function() if enabled() then cmd("startinsert") end end)
@@ -96,6 +95,7 @@ function M.setup(opts)
 	})
 
 	km.set("n", "<Esc>", function()
+		if not bo.modifiable then return end
 		if not enabled() then cmd("normal! <Esc>") return end
 		g.leave_normal = true
 		cmd("startinsert")
@@ -103,13 +103,9 @@ function M.setup(opts)
 
 	api.nvim_create_autocmd("BufEnter", {
 		callback = function()
+			if not bo.modifiable then return end
 			if not enabled() then 
-				-- Force normal mode for disabled buffers
-				sch(function()
-					if not enabled() and vim.fn.mode() == 'i' then
-						cmd("stopinsert")
-					end
-				end)
+				-- Don't interfere with disabled buffers - let them use default mode
 				return
 			end
 			sch(function() if enabled() then cmd("startinsert") end end)

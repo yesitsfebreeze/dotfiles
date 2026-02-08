@@ -1,5 +1,3 @@
---@~/.config/nvim/lua/gutter.lua
---
 -- Gutter/line number management:
 -- - Relative line numbers in normal mode
 -- - Absolute line numbers in insert mode

@@ -1,5 +1,3 @@
---@~/.config/nvim/lua/treesitter.lua
---
 -- Treesitter setup with rainbow delimiters:
 -- - Enables syntax highlighting via treesitter
 -- - Rainbow colored matching delimiters/brackets

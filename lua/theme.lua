@@ -1,5 +1,3 @@
---@~/.config/nvim/lua/theme.lua
---
 -- Theme setup using lackluster:
 -- - Loads the lackluster colorscheme
 -- - Configures transparent background

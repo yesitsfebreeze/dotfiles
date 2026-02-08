@@ -1,5 +1,3 @@
---@~/.config/nvim/lua/sessions.lua
---
 -- Session management with telescope integration:
 -- - Auto-saves sessions per directory
 -- - Restores sessions on startup

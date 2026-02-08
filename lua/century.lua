@@ -1,5 +1,3 @@
---@~/.config/nvim/lua/century.lua
-
 -- adds virtual padding above and below buffers
 -- and keeps the cursor vertically centered as much as possible
 -- that means you only need to look at the center of your screen

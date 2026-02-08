@@ -1,5 +1,3 @@
---@~/.config/nvim/lua/blockcursor.lua
---
 -- Block cursor with mode-based colors and position preservation:
 -- - Always uses a block cursor shape in all modes
 -- - Cursor color changes based on current mode
