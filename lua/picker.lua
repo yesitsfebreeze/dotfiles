@@ -5,6 +5,7 @@ local vim = vim or {}
 local M = {}
 local keymap = require('keymap')
 local sessions = require('sessions')
+local telescope = require('telescope')
 local telescope_pickers = require('telescope.pickers')
 local finders = require('telescope.finders')
 local conf = require('telescope.config').values
@@ -102,7 +103,8 @@ local function layout()
             height = size.height,
             preview_height = 0.5,
             prompt_position = 'bottom',
-        }
+        },
+        borderchars = telescope.get_border(),
     }
 end
 
@@ -224,7 +226,7 @@ end
 local function mode_selector(opts)
     local mode_list = get_available_modes()
     
-    telescope_pickers.new({}, vim.tbl_extend('force', layout(), {
+    telescope_pickers.new(vim.tbl_extend('force', layout(), {
         prompt_title = 'Query',
         finder = finders.new_table({
             results = mode_list,

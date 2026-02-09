@@ -65,7 +65,7 @@ vim.g.maplocalleader = HotKeys.leader
 
 require('telescope').setup()
 require('blockcursor').setup({colors = ModeColors})
-require('invert').setup({hotkey = HotKeys.to_normal })
+-- require('invert').setup({hotkey = HotKeys.to_normal })
 require('statusline').setup({colors = ModeColors})
 require('theme').setup()
 require('completion').setup()
@@ -97,13 +97,15 @@ keymap.rebind({'i', 'n'}, '<C-k>', function()
 	vim.schedule(function() vim.api.nvim_feedkeys(':', 'n', false) end)
 end, { noremap = true, silent = true, desc = 'Command mode' })
 
--- Highlight clear on ESC
-keymap.bind({'n', 'i'}, '<Esc>', function()
+-- Highlight clear on ESC (only in normal mode, don't override default behavior)
+vim.keymap.set('n', '<Esc>', function()
 	local buf = vim.api.nvim_get_current_buf()
-	if not vim.api.nvim_buf_is_valid(buf) then return end
-	if vim.bo[buf].buftype ~= "" then return end
-	vim.cmd('nohlsearch')
-end, { silent = true })
+	if vim.api.nvim_buf_is_valid(buf) and vim.bo[buf].buftype == "" then
+		vim.cmd('nohlsearch')
+	end
+	-- Return to default <Esc> behavior
+	return '<Esc>'
+end, { silent = true, expr = true })
 
 -- Quit commands
 keymap.rebind({'n', 'i'}, '<C-q>', function()

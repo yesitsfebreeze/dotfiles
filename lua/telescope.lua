@@ -2,33 +2,31 @@
 -- - Installs telescope and dependencies
 -- - Configures default mappings and UI
 -- - Other modules can just use telescope without setup
---
--- Options:
--- {
---   borderchars = { '─', '│', '─', '│', '┌', '┐', '┘', '└' }
--- }
 
 local vim = vim or {}
+local def = require('defaults')
 
 local M = {}
 local add, later = require('deps').add, require('deps').later
 
-local defaults = {
-	borderchars = { '─', '│', '─', '│', '┌', '┐', '┘', '└' },
-}
+-- Get border configuration for Telescope
+-- Transforms from nvim_open_win format: { topleft, top, topright, right, botright, bottom, botleft, left }
+-- To Telescope format: { top, right, bottom, left, topleft, topright, botright, botleft }
+function M.get_border()
+	local b = def.float_border
+	return { b[2], b[4], b[6], b[8], b[1], b[3], b[5], b[7] }
+end
 
-function M.setup(opts)
-	local o = vim.tbl_deep_extend('force', defaults, opts or {})
-	
+function M.setup()	
 	-- Install telescope and dependencies
 	add({ source = 'nvim-telescope/telescope.nvim', depends = { 'nvim-lua/plenary.nvim' } })
 	
-	-- Configure telescope
+	-- Configure telescope (deferred to ensure plugins are loaded)
 	later(function()
 		local actions = require('telescope.actions')
 		require('telescope').setup({
 			defaults = {
-				borderchars = o.borderchars,
+				borderchars = M.get_border(),
 				mappings = {
 					i = {
 						["<esc>"] = actions.close,

@@ -2,7 +2,11 @@
 
 local vim = vim or {}
 
-local M = {}
+local M = {
+	-- nvim_open_win format: { topleft, top, topright, right, botright, bottom, botleft, left }
+	float_border = { '╭', '─', '╮', '│', '╯', '─', '╰', '│' },
+	float_padding = { 1, 1, 1, 1 },
+}
 
 function M.setup()
 	local opt = vim.opt
@@ -97,6 +101,7 @@ function M.setup()
 	g.loaded_ruby_provider = 0
 	g.loaded_netrw = 1
 	g.loaded_netrwPlugin = 1
+
 end
 
 return M

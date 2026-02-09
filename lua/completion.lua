@@ -71,6 +71,12 @@ function M.setup(opts)
 					end
 				end, { 'i', 's' }),
 				['<Tab>'] = cmp.mapping(function(fallback)
+					-- Check if cmp is disabled for this buffer
+					local ok, enabled = pcall(vim.api.nvim_buf_get_var, 0, 'cmp_enabled')
+					if ok and enabled == false then
+						fallback()
+						return
+					end
 					if cmp.visible() then
 						cmp.select_next_item()
 					elseif luasnip.expand_or_jumpable() then
