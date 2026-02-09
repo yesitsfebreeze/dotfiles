@@ -22,7 +22,6 @@ function M.setup(opts)
 	local panel_width = screen.get().telescope.width
 	local panel_height = screen.get().telescope.height
 	
-	-- State management
 	local state = {
 		is_open = false,
 		mode = nil,          -- 'files', 'buffers', 'recent', 'grep', etc.
@@ -33,7 +32,6 @@ function M.setup(opts)
 		key = nil,           -- Entry key for file collection
 	}
 	
-	-- Save state to session
 	local function save_state()
 		vim.g.query_state = {
 			mode = state.mode,
@@ -44,7 +42,6 @@ function M.setup(opts)
 		}
 	end
 	
-	-- Restore state from session
 	local function restore_state()
 		if vim.g.query_state then
 			state.mode = vim.g.query_state.mode
@@ -55,7 +52,6 @@ function M.setup(opts)
 		end
 	end
 	
-	-- Common layout configuration
 	local function get_layout_config()
 		return {
 			anchor = 'E',
@@ -66,20 +62,16 @@ function M.setup(opts)
 		}
 	end
 	
-	-- Forward declarations
 	local live_grep_in_files
 	local open_picker
 	local modes_map = {}
 	
-	-- Common mappings for all pickers
 	local function setup_common_mappings(bufnr, map, on_hotkey, on_grepkey)
-		-- <Esc>: Always close completely
 		map('i', '<Esc>', function()
 			state.is_open = false
 			actions.close(bufnr)
 		end)
 		
-		-- <C-o>: Go back to mode selector
 		if on_hotkey then
 			map('i', opts.hotkey, on_hotkey)
 		else
@@ -89,12 +81,10 @@ function M.setup(opts)
 			end)
 		end
 		
-		-- <Tab> (or grepkey): Toggle between grep and filter
 		if on_grepkey then
 			map('i', opts.grepkey, on_grepkey)
 		end
 		
-		-- When selecting an entry, mark as closed so <C-o> can reopen
 		actions.select_default:enhance({
 			post = function()
 				state.is_open = false
@@ -104,7 +94,6 @@ function M.setup(opts)
 		return true
 	end
 	
-	-- Collect files from picker entries and update state
 	local function collect_files(picker, key)
 		local files = {}
 		local seen = {}
@@ -125,7 +114,6 @@ function M.setup(opts)
 		return files
 	end
 	
-	-- Live grep within specific files
 	live_grep_in_files = function(files, pattern)
 		state.is_open = true
 		state.view = 'grep'
@@ -140,9 +128,7 @@ function M.setup(opts)
 			layout_config = get_layout_config(),
 			attach_mappings = function(bufnr, map)
 				return setup_common_mappings(bufnr, map, 
-					-- <C-o>: Go back to mode selector (default behavior)
 					nil,
-					-- <Tab>: Toggle back to filter view
 					function()
 						local p = action_state.get_current_picker(bufnr)
 						state.grep_input = p:_get_prompt()
@@ -157,7 +143,6 @@ function M.setup(opts)
 		})
 	end
 
-	-- Generic wrapper for builtin pickers with grep support
 	local function create_builtin_picker(builtin_fn, title, key, mode_name, extra_opts)
 		state.is_open = true
 		state.mode = mode_name
@@ -171,9 +156,7 @@ function M.setup(opts)
 			layout_config = get_layout_config(),
 			attach_mappings = function(bufnr, map)
 				return setup_common_mappings(bufnr, map,
-					-- <C-o>: Go back to mode selector (default behavior)
 					nil,
-					-- <Tab>: Grep within filtered files
 					function()
 						local p = action_state.get_current_picker(bufnr)
 						if not p or not p.manager then return end
@@ -215,7 +198,6 @@ function M.setup(opts)
 		})
 	end
 	
-	-- Sessions and Commits pickers
 	local function find_sessions_filtered()
 		state.is_open = true
 		state.mode = 'sessions'
@@ -271,7 +253,6 @@ function M.setup(opts)
 		})
 	end
 	
-	-- Mode selector and mappings - populate modes_map
 	modes_map.files = { display = 'Files', fn = find_files_filtered }
 	modes_map.buffers = { display = 'Buffers', fn = find_buffers_filtered }
 	modes_map.recent = { display = 'Recent', fn = find_recent_filtered }
@@ -309,7 +290,6 @@ function M.setup(opts)
 					local selection = action_state.get_selected_entry()
 					actions.close(bufnr)
 					if selection and selection.value.fn then
-						-- Only clear filter input if switching to a different mode
 						if state.mode ~= selection.value.mode then
 							state.filter_input = ''
 							state.grep_input = ''
@@ -317,39 +297,32 @@ function M.setup(opts)
 						selection.value.fn()
 					end
 				end)
-				-- <Esc>: Close completely
 				map('i', '<Esc>', function()
 					state.is_open = false
 					actions.close(bufnr)
 				end)
-				-- No <C-o> mapping needed, already at base
 				return true
 			end,
 		}):find()
 	end
-	
-	-- Keybinding with toggle behavior
+
 	keymap.rebind({ 'n', 'i' }, opts.hotkey, function()
 		vim.cmd('stopinsert')
 		
 		if state.is_open then
-			-- Already open - close it
 			state.is_open = false
 			vim.cmd('stopinsert')
 			return
 		end
 		
-		-- Not open - restore previous search if available
 		restore_state()
 		if state.mode and modes_map[state.mode] then
-			-- Restore the exact view they were in
 			if state.view == 'grep' and #state.files > 0 then
 				live_grep_in_files()
 			else
 				modes_map[state.mode].fn()
 			end
 		else
-			-- First time or no saved state - open mode selector
 			open_picker()
 		end
 	end, {
