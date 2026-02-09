@@ -118,9 +118,9 @@ function M.setup(opts)
 					subtle = "#2a2519",
 				},
 				done = {
-					fg = "#7d5a9f",
-					emphasis = "#7d5a9f",
-					muted = "#7d5a9f",
+					fg = "#a669bc",
+					emphasis = "#a669bc",
+					muted = "#a669bc",
 					subtle = "#251a28",
 				},
 			}
@@ -130,11 +130,11 @@ function M.setup(opts)
 				syntax = {
 					keyword = "#d4856a",
 					conditional = "#d4856a",
-					number = "#7d5a9f",
+					number = "#a669bc",
 					type = "#f7b83d",
 					string = "#84c4ce",
 					comment = "#4e5c66",
-					constant = "#7d5a9f",
+					constant = "#a669bc",
 					func = "#5298c4",
 					variable = "#c0ccdb",
 					operator = "#d4856a",

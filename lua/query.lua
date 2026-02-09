@@ -33,13 +33,13 @@ function M.setup(opts)
 	end
 	
 	-- Common mappings for all pickers
-	local function setup_common_mappings(bufnr, map, on_ctrl_enter)
+	local function setup_common_mappings(bufnr, map, on_hotkey)
 		map('i', '<Esc>', function()
 			actions.close(bufnr)
 		end)
 		
-		if on_ctrl_enter then
-			map('i', '<C-CR>', on_ctrl_enter)
+		if on_hotkey then
+			map('i', opts.hotkey, on_hotkey)
 		end
 		
 		return true
@@ -207,10 +207,25 @@ function M.setup(opts)
 		}):find()
 	end
 	
-	-- Keybinding
+	-- Keybinding with double-press detection
+	local last_press = 0
+	local double_press_timeout = 300 -- ms
+	
 	keymap.rebind({ 'n', 'i' }, opts.hotkey, function()
 		vim.cmd('stopinsert')
-		open_picker()
+		
+		local now = vim.loop.hrtime() / 1000000 -- Convert to ms
+		local time_since_last = now - last_press
+		
+		if time_since_last < double_press_timeout then
+			-- Double press detected - open live grep directly
+			last_press = 0 -- Reset to prevent triple press
+			live_grep_search('')
+		else
+			-- Single press - open mode selector
+			last_press = now
+			open_picker()
+		end
 	end, {
 		noremap = true,
 		silent = true,
