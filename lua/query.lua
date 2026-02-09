@@ -5,6 +5,7 @@ local keymap = require('keymap')
 
 local defaults = {
 	hotkey = "<C-o>",
+	grepkey = "<Tab>",
 }
 
 function M.setup(opts)
@@ -21,6 +22,39 @@ function M.setup(opts)
 	local panel_width = screen.get().telescope.width
 	local panel_height = screen.get().telescope.height
 	
+	-- State management
+	local state = {
+		is_open = false,
+		mode = nil,          -- 'files', 'buffers', 'recent', 'grep', etc.
+		view = 'filter',     -- 'filter' or 'grep'
+		filter_input = '',   -- User input in filter view
+		grep_input = '',     -- User input in grep view
+		files = {},          -- Collected files from filter view
+		key = nil,           -- Entry key for file collection
+	}
+	
+	-- Save state to session
+	local function save_state()
+		vim.g.query_state = {
+			mode = state.mode,
+			view = state.view,
+			filter_input = state.filter_input,
+			grep_input = state.grep_input,
+			files = state.files,
+		}
+	end
+	
+	-- Restore state from session
+	local function restore_state()
+		if vim.g.query_state then
+			state.mode = vim.g.query_state.mode
+			state.view = vim.g.query_state.view or 'filter'
+			state.filter_input = vim.g.query_state.filter_input or ''
+			state.grep_input = vim.g.query_state.grep_input or ''
+			state.files = vim.g.query_state.files or {}
+		end
+	end
+	
 	-- Common layout configuration
 	local function get_layout_config()
 		return {
@@ -32,20 +66,45 @@ function M.setup(opts)
 		}
 	end
 	
+	-- Forward declarations
+	local live_grep_in_files
+	local open_picker
+	local modes_map = {}
+	
 	-- Common mappings for all pickers
-	local function setup_common_mappings(bufnr, map, on_hotkey)
+	local function setup_common_mappings(bufnr, map, on_hotkey, on_grepkey)
+		-- <Esc>: Always close completely
 		map('i', '<Esc>', function()
+			state.is_open = false
 			actions.close(bufnr)
 		end)
 		
+		-- <C-o>: Go back to mode selector
 		if on_hotkey then
 			map('i', opts.hotkey, on_hotkey)
+		else
+			map('i', opts.hotkey, function()
+				actions.close(bufnr)
+				open_picker()
+			end)
 		end
+		
+		-- <Tab> (or grepkey): Toggle between grep and filter
+		if on_grepkey then
+			map('i', opts.grepkey, on_grepkey)
+		end
+		
+		-- When selecting an entry, mark as closed so <C-o> can reopen
+		actions.select_default:enhance({
+			post = function()
+				state.is_open = false
+			end,
+		})
 		
 		return true
 	end
 	
-	-- Collect files from picker entries
+	-- Collect files from picker entries and update state
 	local function collect_files(picker, key)
 		local files = {}
 		local seen = {}
@@ -60,73 +119,108 @@ function M.setup(opts)
 			end
 		end
 		
+		state.files = files
+		state.key = key
+		save_state()
 		return files
 	end
-
+	
 	-- Live grep within specific files
-	local function live_grep_in_files(files, pattern)
+	live_grep_in_files = function(files, pattern)
+		state.is_open = true
+		state.view = 'grep'
+		state.files = files or state.files
+		save_state()
+		
 		builtin.live_grep({
-			default_text = pattern,
-			prompt_title = 'Live Grep in ' .. #files .. ' files',
-			search_dirs = files,
+			default_text = pattern ~= nil and pattern or state.grep_input,
+			prompt_title = 'Live Grep in ' .. #(files or state.files) .. ' files',
+			search_dirs = files or state.files,
 			layout_strategy = 'vertical',
 			layout_config = get_layout_config(),
-			attach_mappings = setup_common_mappings,
+			attach_mappings = function(bufnr, map)
+				return setup_common_mappings(bufnr, map, 
+					-- <C-o>: Go back to mode selector (default behavior)
+					nil,
+					-- <Tab>: Toggle back to filter view
+					function()
+						local p = action_state.get_current_picker(bufnr)
+						state.grep_input = p:_get_prompt()
+						save_state()
+						actions.close(bufnr)
+						if state.mode and modes_map[state.mode] then
+							modes_map[state.mode].fn()
+						end
+					end
+				)
+			end,
 		})
 	end
 
 	-- Generic wrapper for builtin pickers with grep support
-	local function create_builtin_picker(builtin_fn, title, key, pattern, extra_opts)
-		local opts = vim.tbl_extend('force', {
-			default_text = pattern,
+	local function create_builtin_picker(builtin_fn, title, key, mode_name, extra_opts)
+		state.is_open = true
+		state.mode = mode_name
+		state.view = 'filter'
+		save_state()
+		
+		local opts_table = vim.tbl_extend('force', {
+			default_text = state.filter_input,
 			prompt_title = title,
 			layout_strategy = 'vertical',
 			layout_config = get_layout_config(),
 			attach_mappings = function(bufnr, map)
-				return setup_common_mappings(bufnr, map, function()
-					local p = action_state.get_current_picker(bufnr)
-					if not p or not p.manager then return end
-					
-					local files = collect_files(p, key)
-					if #files > 0 then
-						actions.close(bufnr)
-						live_grep_in_files(files, '')
+				return setup_common_mappings(bufnr, map,
+					-- <C-o>: Go back to mode selector (default behavior)
+					nil,
+					-- <Tab>: Grep within filtered files
+					function()
+						local p = action_state.get_current_picker(bufnr)
+						if not p or not p.manager then return end
+						
+						state.filter_input = p:_get_prompt()
+						local files = collect_files(p, key)
+						if #files > 0 then
+							actions.close(bufnr)
+							live_grep_in_files(files)
+						end
 					end
-				end)
+				)
 			end,
 		}, extra_opts or {})
 		
-		builtin_fn(opts)
+		builtin_fn(opts_table)
 	end
 	
-	local function find_files_filtered(pattern)
+	local function find_files_filtered()
 		local extra = {}
-		if pattern and pattern ~= '' then
-			extra.find_command = { 'rg', '--files', '--glob', '*' .. pattern .. '*' }
-		end
-		create_builtin_picker(builtin.find_files, 'Files', 'path', '', extra)
+		create_builtin_picker(builtin.find_files, 'Files', 'path', 'files', extra)
 	end
 	
-	local function find_buffers_filtered(pattern)
-		create_builtin_picker(builtin.buffers, 'Buffers', 'filename', pattern)
+	local function find_buffers_filtered()
+		create_builtin_picker(builtin.buffers, 'Buffers', 'filename', 'buffers')
 	end
 	
-	local function find_recent_filtered(pattern)
-		create_builtin_picker(builtin.oldfiles, 'Recent', 'value', pattern)
+	local function find_recent_filtered()
+		create_builtin_picker(builtin.oldfiles, 'Recent', 'value', 'recent')
 	end
 	
-	local function live_grep_search(pattern)
-		create_builtin_picker(builtin.live_grep, 'Live Grep', 'filename', pattern)
+	local function live_grep_search()
+		create_builtin_picker(builtin.live_grep, 'Live Grep', 'filename', 'grep')
 	end
 	
-	local function find_diagnostics_filtered(pattern)
-		create_builtin_picker(builtin.diagnostics, 'Diagnostics', 'filename', pattern, { 
+	local function find_diagnostics_filtered()
+		create_builtin_picker(builtin.diagnostics, 'Diagnostics', 'filename', 'diagnostics', { 
 			layout_config = get_layout_config() 
 		})
 	end
 	
 	-- Sessions and Commits pickers
-	local function find_sessions_filtered(pattern)
+	local function find_sessions_filtered()
+		state.is_open = true
+		state.mode = 'sessions'
+		save_state()
+		
 		local dir = vim.fn.stdpath('data') .. '/sessions'
 		local files = vim.fn.glob(dir .. '/*.vim', false, true)
 		local sessions = vim.tbl_map(function(path)
@@ -148,9 +242,10 @@ function M.setup(opts)
 			previewer = nil,
 			layout_strategy = 'vertical',
 			layout_config = get_layout_config(),
-			default_text = pattern,
+			default_text = state.filter_input,
 			attach_mappings = function(bufnr, map)
 				actions.select_default:replace(function()
+					state.is_open = false
 					actions.close(bufnr)
 					local selection = action_state.get_selected_entry()
 					if selection then vim.cmd('source ' .. selection.value) end
@@ -160,28 +255,42 @@ function M.setup(opts)
 		}):find()
 	end
 	
-	local function find_commits_filtered(pattern)
+	local function find_commits_filtered()
+		state.is_open = true
+		state.mode = 'commits'
+		save_state()
+		
 		builtin.git_commits({
-			default_text = pattern,
+			default_text = state.filter_input,
 			prompt_title = 'Commits',
 			layout_strategy = 'vertical',
 			layout_config = get_layout_config(),
-			attach_mappings = setup_common_mappings,
+			attach_mappings = function(bufnr, map)
+				return setup_common_mappings(bufnr, map)
+			end,
 		})
 	end
 	
-	-- Mode selector
+	-- Mode selector and mappings - populate modes_map
+	modes_map.files = { display = 'Files', fn = find_files_filtered }
+	modes_map.buffers = { display = 'Buffers', fn = find_buffers_filtered }
+	modes_map.recent = { display = 'Recent', fn = find_recent_filtered }
+	modes_map.grep = { display = 'Grep', fn = live_grep_search }
+	modes_map.diagnostics = { display = 'Diagnostics', fn = find_diagnostics_filtered }
+	modes_map.sessions = { display = 'Sessions', fn = find_sessions_filtered }
+	modes_map.commits = { display = 'Commits', fn = find_commits_filtered }
+	
 	local modes = {
-		{ mode = 'f', display = 'Files', fn = find_files_filtered },
-		{ mode = 'b', display = 'Buffers', fn = find_buffers_filtered },
-		{ mode = 'r', display = 'Recent', fn = find_recent_filtered },
-		{ mode = 'g', display = 'Grep', fn = live_grep_search },
-		{ mode = 'd', display = 'Diagnostics', fn = find_diagnostics_filtered },
-		{ mode = 's', display = 'Sessions', fn = find_sessions_filtered },
-		{ mode = 'c', display = 'Commits', fn = find_commits_filtered },
+		{ mode = 'files', display = 'Files', fn = find_files_filtered },
+		{ mode = 'buffers', display = 'Buffers', fn = find_buffers_filtered },
+		{ mode = 'recent', display = 'Recent', fn = find_recent_filtered },
+		{ mode = 'grep', display = 'Grep', fn = live_grep_search },
+		{ mode = 'diagnostics', display = 'Diagnostics', fn = find_diagnostics_filtered },
+		{ mode = 'sessions', display = 'Sessions', fn = find_sessions_filtered },
+		{ mode = 'commits', display = 'Commits', fn = find_commits_filtered },
 	}
 	
-	local function open_picker()
+	open_picker = function()
 		pickers.new({}, {
 			prompt_title = 'Query',
 			finder = finders.new_table({
@@ -196,40 +305,57 @@ function M.setup(opts)
 			layout_config = get_layout_config(),
 			attach_mappings = function(bufnr, map)
 				actions.select_default:replace(function()
+					state.is_open = false
 					local selection = action_state.get_selected_entry()
 					actions.close(bufnr)
 					if selection and selection.value.fn then
-						selection.value.fn('')
+						-- Only clear filter input if switching to a different mode
+						if state.mode ~= selection.value.mode then
+							state.filter_input = ''
+							state.grep_input = ''
+						end
+						selection.value.fn()
 					end
 				end)
-				return setup_common_mappings(bufnr, map)
+				-- <Esc>: Close completely
+				map('i', '<Esc>', function()
+					state.is_open = false
+					actions.close(bufnr)
+				end)
+				-- No <C-o> mapping needed, already at base
+				return true
 			end,
 		}):find()
 	end
 	
-	-- Keybinding with double-press detection
-	local last_press = 0
-	local double_press_timeout = 300 -- ms
-	
+	-- Keybinding with toggle behavior
 	keymap.rebind({ 'n', 'i' }, opts.hotkey, function()
 		vim.cmd('stopinsert')
 		
-		local now = vim.loop.hrtime() / 1000000 -- Convert to ms
-		local time_since_last = now - last_press
+		if state.is_open then
+			-- Already open - close it
+			state.is_open = false
+			vim.cmd('stopinsert')
+			return
+		end
 		
-		if time_since_last < double_press_timeout then
-			-- Double press detected - open live grep directly
-			last_press = 0 -- Reset to prevent triple press
-			live_grep_search('')
+		-- Not open - restore previous search if available
+		restore_state()
+		if state.mode and modes_map[state.mode] then
+			-- Restore the exact view they were in
+			if state.view == 'grep' and #state.files > 0 then
+				live_grep_in_files()
+			else
+				modes_map[state.mode].fn()
+			end
 		else
-			-- Single press - open mode selector
-			last_press = now
+			-- First time or no saved state - open mode selector
 			open_picker()
 		end
 	end, {
 		noremap = true,
 		silent = true,
-		desc = 'Open Query',
+		desc = 'Toggle Query',
 	})
 end
 
