@@ -44,6 +44,11 @@ local function get_session_name(path)
 	return path:gsub('[/\\:]', '_'):gsub('^_+', ''):gsub('_+$', '')
 end
 
+-- Public function to get session name for external use
+function M.get_session_name(path)
+	return get_session_name(path)
+end
+
 local function get_session_file(path)
 	ensure_sessions_dir()
 	return sessions_dir .. '/' .. get_session_name(path) .. '.vim'

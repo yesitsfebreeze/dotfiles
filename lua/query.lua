@@ -2,11 +2,14 @@
 
 local M = {}
 local keymap = require('keymap')
+local sessions = require('sessions')
 
 local defaults = {
 	hotkey = "<C-o>",
 	grepkey = "<Tab>",
 }
+
+local SAVE_DEBOUNCE = 500  -- milliseconds
 
 function M.setup(opts)
 	opts = vim.tbl_deep_extend('force', defaults, opts or {})
@@ -25,31 +28,77 @@ function M.setup(opts)
 	local state = {
 		is_open = false,
 		mode = nil,          -- 'files', 'buffers', 'recent', 'grep', etc.
-		view = 'filter',     -- 'filter' or 'grep'
+		view = 'filter',     -- 'filter' or 'greg'
 		filter_input = '',   -- User input in filter view
 		grep_input = '',     -- User input in grep view
 		files = {},          -- Collected files from filter view
 		key = nil,           -- Entry key for file collection
 	}
 	
+	local save_timer = nil
+	
 	local function save_state()
-		vim.g.query_state = {
+		local state_data = {
 			mode = state.mode,
 			view = state.view,
 			filter_input = state.filter_input,
 			grep_input = state.grep_input,
 			files = state.files,
 		}
+		vim.g.query_state = state_data
+		
+		-- Save to dedicated file using same naming as sessions
+		local session_name = sessions.get_session_name()
+		local dir = vim.fn.stdpath('data') .. '/query_state'
+		if vim.fn.isdirectory(dir) == 0 then
+			vim.fn.mkdir(dir, 'p')
+		end
+		local state_file = dir .. '/query_' .. session_name .. '.json'
+		
+		local json = vim.fn.json_encode(state_data)
+		local file = io.open(state_file, 'w')
+		if file then
+			file:write(json)
+			file:close()
+		end
+	end
+	
+	local function save_state_debounced()
+		if save_timer then save_timer:stop() end
+		save_timer = vim.defer_fn(function() save_state() end, SAVE_DEBOUNCE)
 	end
 	
 	local function restore_state()
-		if vim.g.query_state then
-			state.mode = vim.g.query_state.mode
-			state.view = vim.g.query_state.view or 'filter'
-			state.filter_input = vim.g.query_state.filter_input or ''
-			state.grep_input = vim.g.query_state.grep_input or ''
-			state.files = vim.g.query_state.files or {}
+		-- Load from dedicated file using same naming as sessions
+		local session_name = sessions.get_session_name()
+		local state_file = vim.fn.stdpath('data') .. '/query_state/query_' .. session_name .. '.json'
+		
+		if vim.fn.filereadable(state_file) == 1 then
+			local file = io.open(state_file, 'r')
+			if file then
+				local json = file:read('*a')
+				file:close()
+				local ok, data = pcall(vim.fn.json_decode, json)
+				if ok and data then
+					state.mode = data.mode
+					state.view = data.view or 'filter'
+					state.filter_input = data.filter_input or ''
+					state.grep_input = data.grep_input or ''
+					state.files = data.files or {}
+					
+					-- Debug output
+					print('Restored state:')
+					print('  mode: ' .. tostring(state.mode))
+					print('  view: ' .. tostring(state.view))
+					print('  filter_input: ' .. tostring(state.filter_input))
+					print('  grep_input: ' .. tostring(state.grep_input))
+					print('  files count: ' .. #state.files)
+					return
+				end
+			end
 		end
+		
+		print('No query state file found')
 	end
 	
 	local function get_layout_config()
@@ -67,7 +116,31 @@ function M.setup(opts)
 	local modes_map = {}
 	
 	local function setup_common_mappings(bufnr, map, on_hotkey, on_grepkey)
+		-- Track input changes with debounced saving
+		vim.api.nvim_create_autocmd('TextChangedI', {
+			buffer = bufnr,
+			callback = function()
+				local p = action_state.get_current_picker(bufnr)
+				if p then
+					if state.view == 'grep' then
+						state.grep_input = p:_get_prompt()
+					else
+						state.filter_input = p:_get_prompt()
+					end
+					save_state_debounced()
+				end
+			end,
+		})
+		
 		map('i', '<Esc>', function()
+			-- Save current input before closing
+			local p = action_state.get_current_picker(bufnr)
+			if state.view == 'grep' then
+				state.grep_input = p:_get_prompt()
+			else
+				state.filter_input = p:_get_prompt()
+			end
+			save_state()
 			state.is_open = false
 			actions.close(bufnr)
 		end)
@@ -76,6 +149,14 @@ function M.setup(opts)
 			map('i', opts.hotkey, on_hotkey)
 		else
 			map('i', opts.hotkey, function()
+				-- Save current input before closing
+				local p = action_state.get_current_picker(bufnr)
+				if state.view == 'grep' then
+					state.grep_input = p:_get_prompt()
+				else
+					state.filter_input = p:_get_prompt()
+				end
+				save_state()
 				actions.close(bufnr)
 				open_picker()
 			end)
@@ -120,8 +201,11 @@ function M.setup(opts)
 		state.files = files or state.files
 		save_state()
 		
+		local input = pattern ~= nil and pattern or state.grep_input
+		print('Opening live_grep with input: ' .. tostring(input))
+		
 		builtin.live_grep({
-			default_text = pattern ~= nil and pattern or state.grep_input,
+			default_text = input,
 			prompt_title = 'Live Grep in ' .. #(files or state.files) .. ' files',
 			search_dirs = files or state.files,
 			layout_strategy = 'vertical',
@@ -149,6 +233,8 @@ function M.setup(opts)
 		state.view = 'filter'
 		save_state()
 		
+		print('Opening ' .. title .. ' with filter_input: ' .. tostring(state.filter_input))
+		
 		local opts_table = vim.tbl_extend('force', {
 			default_text = state.filter_input,
 			prompt_title = title,
@@ -175,29 +261,7 @@ function M.setup(opts)
 		builtin_fn(opts_table)
 	end
 	
-	local function find_files_filtered()
-		local extra = {}
-		create_builtin_picker(builtin.find_files, 'Files', 'path', 'files', extra)
-	end
-	
-	local function find_buffers_filtered()
-		create_builtin_picker(builtin.buffers, 'Buffers', 'filename', 'buffers')
-	end
-	
-	local function find_recent_filtered()
-		create_builtin_picker(builtin.oldfiles, 'Recent', 'value', 'recent')
-	end
-	
-	local function live_grep_search()
-		create_builtin_picker(builtin.live_grep, 'Live Grep', 'filename', 'grep')
-	end
-	
-	local function find_diagnostics_filtered()
-		create_builtin_picker(builtin.diagnostics, 'Diagnostics', 'filename', 'diagnostics', { 
-			layout_config = get_layout_config() 
-		})
-	end
-	
+	-- Sessions picker (custom implementation)
 	local function find_sessions_filtered()
 		state.is_open = true
 		state.mode = 'sessions'
@@ -253,23 +317,27 @@ function M.setup(opts)
 		})
 	end
 	
-	modes_map.files = { display = 'Files', fn = find_files_filtered }
-	modes_map.buffers = { display = 'Buffers', fn = find_buffers_filtered }
-	modes_map.recent = { display = 'Recent', fn = find_recent_filtered }
-	modes_map.grep = { display = 'Grep', fn = live_grep_search }
-	modes_map.diagnostics = { display = 'Diagnostics', fn = find_diagnostics_filtered }
-	modes_map.sessions = { display = 'Sessions', fn = find_sessions_filtered }
-	modes_map.commits = { display = 'Commits', fn = find_commits_filtered }
-	
-	local modes = {
-		{ mode = 'files', display = 'Files', fn = find_files_filtered },
-		{ mode = 'buffers', display = 'Buffers', fn = find_buffers_filtered },
-		{ mode = 'recent', display = 'Recent', fn = find_recent_filtered },
-		{ mode = 'grep', display = 'Grep', fn = live_grep_search },
-		{ mode = 'diagnostics', display = 'Diagnostics', fn = find_diagnostics_filtered },
+	-- Mode definitions: data-driven configuration
+	local mode_configs = {
+		{ mode = 'files', display = 'Files', builtin = builtin.find_files, key = 'path' },
+		{ mode = 'buffers', display = 'Buffers', builtin = builtin.buffers, key = 'filename' },
+		{ mode = 'recent', display = 'Recent', builtin = builtin.oldfiles, key = 'value' },
+		{ mode = 'grep', display = 'Grep', builtin = builtin.live_grep, key = 'filename' },
+		{ mode = 'diagnostics', display = 'Diagnostics', builtin = builtin.diagnostics, key = 'filename' },
 		{ mode = 'sessions', display = 'Sessions', fn = find_sessions_filtered },
 		{ mode = 'commits', display = 'Commits', fn = find_commits_filtered },
 	}
+	
+	-- Build modes_map and modes list from configuration
+	local modes = {}
+	for _, config in ipairs(mode_configs) do
+		local fn = config.fn or function()
+			create_builtin_picker(config.builtin, config.display, config.key, config.mode)
+		end
+		
+		modes_map[config.mode] = { display = config.display, fn = fn }
+		table.insert(modes, { mode = config.mode, display = config.display, fn = fn })
+	end
 	
 	open_picker = function()
 		pickers.new({}, {
@@ -315,7 +383,6 @@ function M.setup(opts)
 			return
 		end
 		
-		restore_state()
 		if state.mode and modes_map[state.mode] then
 			if state.view == 'grep' and #state.files > 0 then
 				live_grep_in_files()
@@ -329,6 +396,16 @@ function M.setup(opts)
 		noremap = true,
 		silent = true,
 		desc = 'Toggle Query',
+	})
+	
+	-- Restore state from saved file on load
+	restore_state()
+	
+	-- Save state when vim closes
+	vim.api.nvim_create_autocmd('VimLeavePre', {
+		callback = function()
+			save_state()
+		end,
 	})
 end
 
