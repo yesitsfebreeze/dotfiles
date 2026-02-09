@@ -17,12 +17,8 @@ local defaults = {
 	borderchars = { '─', '│', '─', '│', '┌', '┐', '┘', '└' },
 }
 
-local function merge_opts(user)
-	return vim.tbl_deep_extend('force', defaults, user or {})
-end
-
 function M.setup(opts)
-	local o = merge_opts(opts)
+	local o = vim.tbl_deep_extend('force', defaults, opts or {})
 	
 	-- Install telescope and dependencies
 	add({ source = 'nvim-telescope/telescope.nvim', depends = { 'nvim-lua/plenary.nvim' } })

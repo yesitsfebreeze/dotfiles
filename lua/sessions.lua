@@ -26,13 +26,6 @@ local defaults = {
 	hotkey = "<C-p>"
 }
 
-local function merge_opts(user)
-	user = user or {}
-	return {
-		hotkey = user.hotkey or defaults.hotkey
-	}
-end
-
 local function ensure_sessions_dir()
 	if fn.isdirectory(sessions_dir) == 0 then
 		fn.mkdir(sessions_dir, 'p')
@@ -98,7 +91,7 @@ local function list_sessions()
 end
 
 function M.setup(opts)
-	local o = merge_opts(opts)
+	local o = vim.tbl_deep_extend('force', defaults, opts or {})
 	
 	add({ source = 'nvim-telescope/telescope.nvim', depends = { 'nvim-lua/plenary.nvim' } })
 

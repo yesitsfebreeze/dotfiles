@@ -33,16 +33,12 @@ local defaults = {
 		format = "<leader>f",
 		diagnostic_prev = "[d",
 		diagnostic_next = "]d",
-		diagnostic_float = "<leader>d",
+	diagnostic_float = "<leader>d",
 	},
 }
 
-local function merge_opts(user)
-	return vim.tbl_deep_extend('force', defaults, user or {})
-end
-
 function M.setup(opts)
-	local o = merge_opts(opts)
+	local o = vim.tbl_deep_extend('force', defaults, opts or {})
 	
 	-- Install LSP-related plugins
 	add({ source = 'neovim/nvim-lspconfig' })

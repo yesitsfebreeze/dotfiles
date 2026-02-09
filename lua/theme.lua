@@ -18,13 +18,6 @@ local defaults = {
 	style = "dark_dimmed",
 }
 
-local function merge_opts(user)
-	user = user or {}
-	return {
-		style = user.style or defaults.style,
-	}
-end
-
 local function apply_transparent()
 	vim.cmd([[
 		highlight Normal guibg=NONE ctermbg=NONE
@@ -59,7 +52,7 @@ local function apply_transparent()
 end
 
 function M.setup(opts)
-	local o = merge_opts(opts)
+	local o = vim.tbl_deep_extend('force', defaults, opts or {})
 	
 	add({ source = 'projekt0n/github-nvim-theme' })
 	

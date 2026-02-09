@@ -33,11 +33,11 @@ local MODE_DIAGNOSTICS = 4
 local MODE_SESSIONS = 5
 local MODE_COMMITS = 6
 
-vim.g.smart_query = {
+local state = {
     open = false,
     mode = MODE_GREP,
     view = FILTER,
-    inputs = {
+    prompts = {
         filter = '',
         grep = '',
     },
@@ -71,7 +71,7 @@ end
 local function store()
     local session_file = ensure_session_file()
     if not session_file then return end
-    local json = vim.fn.json_encode(vim.g.smart_query)
+    local json = vim.fn.json_encode(state)
     local file = io.open(session_file, 'w')
     if file then
         file:write(json)
@@ -82,9 +82,9 @@ end
 local function restore()
     local session_file = ensure_session_file()
     if not session_file then return end
-    if vim.fn.filereadable(state_file) ~= 1 then return end
+    if vim.fn.filereadable(session_file) ~= 1 then return end
 
-    local file = io.open(state_file, 'r')
+    local file = io.open(session_file, 'r')
     if not file then return end 
 
     local json = file:read('*a')
@@ -92,7 +92,10 @@ local function restore()
     local ok, data = pcall(vim.fn.json_decode, json)
     if not (ok and data) then return end
 
-    vim.g.smart_query = data
+    -- Migrate old format
+    if data.filter_input then data.prompts = { filter = data.filter_input, grep = data.grep_input or '' } end
+    
+    state = vim.tbl_deep_extend('force', state, data)
 end
 
 local function layout()
@@ -131,12 +134,20 @@ local function collect_files(picker, mode_id)
 end
 
 local function close()
-    local s = vim.g.smart_query
+    -- Save current input before closing
+    if current_buffer then
+        local p = action_state.get_current_picker(current_buffer)
+        if p then
+            local prompt = p:_get_prompt()
+            if state.view == FILTER then state.prompts.filter = prompt end
+            if state.view == GREP then state.prompts.grep = prompt end
+        end
+    end
+    
+    state.is_open = false
     store()
     if current_buffer then actions.close(current_buffer) end
     current_buffer = nil
-    s.is_open = false
-    vim.g.smart_query = s
 end
 
 local function intercept(bufnr, map, opts)
@@ -144,36 +155,31 @@ local function intercept(bufnr, map, opts)
     map('i', opts.hotkeys.close, close)
     
     map('i', opts.hotkeys.switch, function()
-        local s = vim.g.smart_query
-        
-        if s.view == FILTER then
+        if state.view == FILTER then
             local p = action_state.get_current_picker(bufnr)
-            if not p or not p.manager then  return  end
+            if not p or not p.manager then return end
             
-            s.filter_input = p:_get_prompt()
-            local files = collect_files(p, s.mode)
+            state.prompts.filter = p:_get_prompt()
+            local files = collect_files(p, state.mode)
 
             if #files > 0 then
-                s.view = GREP
-                s.files = files
-                s.selected = s.mode
-                vim.g.smart_query = s
+                state.view = GREP
+                state.files = files
+                state.selected = state.mode
                 actions.close(bufnr)
                 grep_in_files(opts)
             end
             return
         end
 
-        if s.view == GREP then
+        if state.view == GREP then
             local p = action_state.get_current_picker(bufnr)
-            s.grep_input = p:_get_prompt()
-            s.view = FILTER
-            vim.g.smart_query = s
+            state.prompts.grep = p:_get_prompt()
+            state.view = FILTER
             store()
             actions.close(bufnr)
-            print("DEBUG: switching back to FILTER, s.mode=" .. tostring(s.mode) .. " display=" .. tostring(MODES[s.mode] and MODES[s.mode].display))
-            if PICKERS[s.mode] then
-                PICKERS[s.mode]()
+            if PICKERS[state.mode] then
+                PICKERS[state.mode]()
             end
             return
         end
@@ -213,11 +219,10 @@ local function sessions_picker(opts)
 end
 
 grep_in_files = function(opts)
-    local s = vim.g.smart_query
     local picker_opts = vim.tbl_extend('force', layout(), {
-        default_text = s.grep_input,
-        prompt_title = 'Live Grep in ' .. #s.files .. ' files',
-        search_dirs = s.files,
+        default_text = state.prompts.grep,
+        prompt_title = 'Live Grep in ' .. #state.files .. ' files',
+        search_dirs = state.files,
         attach_mappings = function(bufnr, map)
             return intercept(bufnr, map, opts)
         end,
@@ -229,9 +234,8 @@ end
 local function configure_picker(mode_key, builtin_fn, opts)
     local mode = MODES[mode_key]
     PICKERS[mode_key] = function(extra_opts)
-        local s = vim.g.smart_query
         local opts_table = vim.tbl_extend('force', layout(), {
-            default_text = s.filter_input,
+            default_text = state.prompts.filter,
             prompt_title = mode.display,
             attach_mappings = function(bufnr, map)
                 return intercept(bufnr, map, opts)
@@ -241,7 +245,7 @@ local function configure_picker(mode_key, builtin_fn, opts)
     end
 end
 
-function open(opts)
+local function mode_selector(opts)
 	local mode_list = {}
 	for mode_id, mode_data in pairs(MODES) do
 		table.insert(mode_list, { id = mode_id, display = mode_data.display })
@@ -258,18 +262,16 @@ function open(opts)
 		sorter = conf.generic_sorter({}),
 		previewer = nil,
 		attach_mappings = function(bufnr, map)
-            local s = vim.g.smart_query
 			current_buffer = bufnr
 			actions.select_default:replace(function()
 				local selection = action_state.get_selected_entry()
 				if selection and selection.value then
 					local selected_mode = selection.value.id
-					if s.mode ~= selected_mode then
-						s.filter_input = ''
-						s.grep_input = ''
+					if state.mode ~= selected_mode then
+						state.prompts.filter = ''
+						state.prompts.grep = ''
 					end
-					s.mode = selected_mode
-					vim.g.smart_query = s
+					state.mode = selected_mode
 					close()
 					if PICKERS[selected_mode] then
 						PICKERS[selected_mode]()
@@ -279,6 +281,37 @@ function open(opts)
 			return intercept(bufnr, map, opts)
 		end,
 	})):find()
+end
+
+function open(opts)
+	-- If already open, clear prompts and switch to mode selector
+	if state.is_open then
+		state.prompts.filter = ''
+		state.prompts.grep = ''
+		state.mode = nil
+		if current_buffer then actions.close(current_buffer) end
+		current_buffer = nil
+		mode_selector(opts)
+		return
+	end
+	
+	state.is_open = true
+	
+	-- If we have a previous mode, open that picker directly
+	if state.mode and PICKERS[state.mode] then
+		-- If view was GREP, reopen grep with saved files
+		if state.view == GREP and state.files and #state.files > 0 then
+			grep_in_files(opts)
+		else
+			-- Otherwise open the filter view for that mode
+			state.view = FILTER
+			PICKERS[state.mode]()
+		end
+		return
+	end
+	
+	-- No previous state, show mode selector
+	mode_selector(opts)
 end
 
 function M.setup(opts)
@@ -302,8 +335,7 @@ function M.setup(opts)
     vim.api.nvim_create_autocmd('VimResized', {
         group = gr,
         callback = function() 
-            local s = vim.g.smart_query
-            if s.is_open then
+            if state.is_open then
                 close()
                 open()
             end

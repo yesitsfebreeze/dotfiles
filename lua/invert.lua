@@ -29,13 +29,6 @@ local defaults = {
 	hotkey = "<C-Space>",
 }
 
-local function merge_opts(user)
-	user = user or {}
-	return {
-		hotkey = user.hotkey or defaults.hotkey,
-	}
-end
-
 local function is_enabled(buf)
 	if not api.nvim_buf_is_valid(buf) then return false end
 	local b = bo[buf]
@@ -57,7 +50,7 @@ local function is_enabled(buf)
 end
 
 function M.setup(opts)
-	local o = merge_opts(opts)
+	local o = vim.tbl_deep_extend('force', defaults, opts or {})
 
 	local hotkey = o.hotkey
 

@@ -30,22 +30,8 @@ local defaults = {
 	}
 }
 
-local function merge_opts(user)
-	user = user or {}
-	local colors = user.colors or {}
-	return {
-		colors = {
-			n = colors.n or defaults.colors.n,
-			i = colors.i or defaults.colors.i,
-			v = colors.v or defaults.colors.v,
-			r = colors.r or defaults.colors.r,
-			c = colors.c or defaults.colors.c,
-		}
-	}
-end
-
 function M.setup(opts)
-	local o = merge_opts(opts)
+	local o = vim.tbl_deep_extend('force', defaults, opts or {})
 
 	local modes = {
 		n = o.colors.n,

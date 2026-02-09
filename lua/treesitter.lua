@@ -32,15 +32,8 @@ local defaults = {
 	}
 }
 
-local function merge_opts(user)
-	user = user or {}
-	return {
-		bracket_colors = user.bracket_colors or defaults.bracket_colors
-	}
-end
-
 function M.setup(opts)
-	local o = merge_opts(opts)
+	local o = vim.tbl_deep_extend('force', defaults, opts or {})
 	-- Install treesitter and rainbow delimiters
 	add({ source = 'nvim-treesitter/nvim-treesitter' })
 	add({ source = 'HiPhish/rainbow-delimiters.nvim' })

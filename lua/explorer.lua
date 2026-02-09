@@ -21,15 +21,8 @@ local defaults = {
 	hotkey = "<C-e>"
 }
 
-local function merge_opts(user)
-	user = user or {}
-	return {
-		hotkey = user.hotkey or defaults.hotkey
-	}
-end
-
 function M.setup(opts)
-	local o = merge_opts(opts)
+	local o = vim.tbl_deep_extend('force', defaults, opts or {})
 	add({ source = 'stevearc/oil.nvim' })
 
 	require('oil').setup({

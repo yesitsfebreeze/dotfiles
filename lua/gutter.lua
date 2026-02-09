@@ -40,33 +40,13 @@ local defaults = {
 	}
 }
 
-local function merge_opts(user)
-	user = user or {}
-	local colors = user.colors or {}
-	local git = user.git or {}
-	return {
-		colors = {
-			n = colors.n or defaults.colors.n,
-			i = colors.i or defaults.colors.i,
-			v = colors.v or defaults.colors.v,
-			r = colors.r or defaults.colors.r,
-			c = colors.c or defaults.colors.c,
-		},
-		git = {
-			add = git.add or defaults.git.add,
-			change = git.change or defaults.git.change,
-			delete = git.delete or defaults.git.delete,
-		}
-	}
-end
-
 local function set_line_number_color(color)
 	cmd("highlight CursorLineNr guifg=" .. color .. " guibg=NONE gui=bold")
 	cmd("highlight LineNr guifg=#5a5a5a guibg=NONE")
 end
 
 function M.setup(opts)
-	local o = merge_opts(opts)
+	local o = vim.tbl_deep_extend('force', defaults, opts or {})
 
 	-- Install and configure gitsigns
 	add({ source = 'lewis6991/gitsigns.nvim' })

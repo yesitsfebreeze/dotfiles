@@ -12,17 +12,13 @@ local defaults = {
 		commits = "<leader>gc",
 		stage_hunk = "<leader>gs",
 		unstage_hunk = "<leader>gu",
-		reset_hunk = "<leader>gr",
+	reset_hunk = "<leader>gr",
 	},
 	blame_default = true,
 }
 
-local function merge_opts(user)
-	return vim.tbl_deep_extend('force', defaults, user or {})
-end
-
 function M.setup(opts)
-	local o = merge_opts(opts)
+	local o = vim.tbl_deep_extend('force', defaults, opts or {})
 	
 	add({ source = 'lewis6991/gitsigns.nvim' })
 	add({ source = 'sindrets/diffview.nvim' })

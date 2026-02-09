@@ -26,20 +26,8 @@ local defaults = {
 	color = '#626262'
 }
 
-local function merge_opts(user)
-	user = user or {}
-	return {
-		tab = user.tab ~= nil and user.tab or defaults.tab,
-		trail = user.trail ~= nil and user.trail or defaults.trail,
-		extends = user.extends ~= nil and user.extends or defaults.extends,
-		precedes = user.precedes ~= nil and user.precedes or defaults.precedes,
-		nbsp = user.nbsp ~= nil and user.nbsp or defaults.nbsp,
-		color = user.color or defaults.color
-	}
-end
-
 function M.setup(opts)
-	local o = merge_opts(opts)
+	local o = vim.tbl_deep_extend('force', defaults, opts or {})
 	-- Tab settings
 	vim.opt.tabstop = 2        -- Number of spaces a tab counts for
 	vim.opt.shiftwidth = 2     -- Number of spaces for auto-indent
