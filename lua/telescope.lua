@@ -5,16 +5,27 @@
 
 local vim = vim or {}
 local def = require('defaults')
+local screen = require('screen')
 
 local M = {}
 local add, later = require('deps').add, require('deps').later
 
 -- Get border configuration for Telescope
--- Transforms from nvim_open_win format: { topleft, top, topright, right, botright, bottom, botleft, left }
--- To Telescope format: { top, right, bottom, left, topleft, topright, botright, botleft }
 function M.get_border()
 	local b = def.float_border
 	return { b[2], b[4], b[6], b[8], b[1], b[3], b[5], b[7] }
+end
+
+-- Format path to ensure filename is visible
+function M.format_path(_, path)
+	local filename = vim.fn.fnamemodify(path, ':t')
+	local max_width = screen.get().telescope.width - 6
+	if #path <= max_width then return path end
+	local avail = max_width - #filename - 4
+	if avail > 0 then
+		return path:sub(1, avail) .. '...' .. filename
+	end
+	return '...' .. filename
 end
 
 function M.setup()	

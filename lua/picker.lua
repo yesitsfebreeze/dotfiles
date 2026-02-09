@@ -29,7 +29,7 @@ local picker_configs = {}
 local PICKERS = {}
 
 local state = {
-    open = false,
+    is_open = false,
     mode = nil,
     view = FILTER,
     prompts = {
@@ -105,6 +105,7 @@ local function layout()
             prompt_position = 'bottom',
         },
         borderchars = telescope.get_border(),
+        path_display = telescope.format_path,
     }
 end
 

@@ -104,6 +104,7 @@ local function open_file_search(query)
 			prompt_position = 'bottom',
 		},
 		borderchars = require('telescope').get_border(),
+		path_display = require('telescope').format_path,
 		attach_mappings = function(prompt_bufnr)
 			actions.select_default:replace(function()
 				local selection = action_state.get_selected_entry()
@@ -193,14 +194,14 @@ open_explorer = function(dir, select_file)
 	
 	if select_file then
 		vim.defer_fn(function()
-			if not valid_buf(runtime.oil_buf) then return end
+			if not valid_buf(runtime.oil_buf) or not valid_win(runtime.oil_win) then return end
 			for i, line in ipairs(vim.api.nvim_buf_get_lines(runtime.oil_buf, 0, -1, false)) do
 				if line:find(select_file, 1, true) then
 					pcall(vim.api.nvim_win_set_cursor, runtime.oil_win, { i, 0 })
 					break
 				end
 			end
-		end, 20)
+		end, 100)
 	end
 	
 	create_input_window()
