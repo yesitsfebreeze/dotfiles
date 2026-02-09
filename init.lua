@@ -26,7 +26,7 @@ local HotKeys = {
 	to_normal = "<F24>",
 	leader = " ",
 	explorer = "<C-e>",
-	smartsearch = "<C-o>",
+	query = "<C-o>",
 	lsp = {
 		declaration = "gD",
 		definition = "gd",
@@ -69,7 +69,7 @@ require('treesitter').setup({bracket_colors = BracketColors})
 require('gutter').setup({colors = ModeColors})
 require('gittools').setup({hotkeys = HotKeys.gittools})
 require('explorer').setup({hotkey = HotKeys.explorer})
-require('smartsearch').setup({hotkey = HotKeys.smartsearch})
+require('query').setup({hotkey = HotKeys.query, separator = "?"})
 require('sessions').setup()
 require('whitespace').setup()
 require('century').setup()
