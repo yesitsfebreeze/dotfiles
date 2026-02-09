@@ -1,6 +1,9 @@
+local builtin = require('telescope.builtin')
+
 return {
-    id = 'recent',
-    display = 'Recent',
-    key = 'value',
-    builtin = 'oldfiles',
+    title = 'Recent',
+    condition = function() return true end,
+    pick = function(opts)
+        builtin.oldfiles(opts)
+    end,
 }

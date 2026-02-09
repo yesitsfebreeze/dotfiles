@@ -1,6 +1,9 @@
+local builtin = require('telescope.builtin')
+
 return {
-    id = 'diagnostics',
-    display = 'Diagnostics',
-    key = 'filename',
-    builtin = 'diagnostics',
+    title = 'Diagnostics',
+    condition = function() return true end,
+    pick = function(opts)
+        builtin.diagnostics(opts)
+    end,
 }

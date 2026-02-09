@@ -52,7 +52,7 @@ local HotKeys = {
 		unstage_hunk = "<leader>gu",
 		reset_hunk = "<leader>gr",
 	},
-	query = {
+	picker = {
 		open = "<C-o>",
 		close = "<Esc>",
 		grep = "<Tab>",
@@ -74,7 +74,7 @@ require('treesitter').setup({bracket_colors = BracketColors})
 require('gutter').setup({colors = ModeColors})
 require('gittools').setup({hotkeys = HotKeys.gittools})
 require('explorer').setup({hotkey = HotKeys.explorer})
-require('query').setup({hotkeys = HotKeys.query})
+require('picker').setup({hotkeys = HotKeys.picker})
 require('sessions').setup()
 require('whitespace').setup()
 require('century').setup()

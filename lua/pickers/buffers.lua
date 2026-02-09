@@ -1,6 +1,9 @@
+local builtin = require('telescope.builtin')
+
 return {
-    id = 'buffers',
-    display = 'Buffers',
-    key = 'filename',
-    builtin = 'buffers',
+    title = 'Buffers',
+    condition = function() return true end,
+    pick = function(opts)
+        builtin.buffers(opts)
+    end,
 }

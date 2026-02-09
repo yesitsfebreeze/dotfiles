@@ -1,6 +1,9 @@
+local builtin = require('telescope.builtin')
+
 return {
-    id = 'grep',
-    display = 'Grep',
-    key = 'filename',
-    builtin = 'live_grep',
+    title = 'Grep',
+    condition = function() return true end,
+    pick = function(opts)
+        builtin.live_grep(opts)
+    end,
 }

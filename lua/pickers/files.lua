@@ -1,6 +1,9 @@
+local builtin = require('telescope.builtin')
+
 return {
-    id = 'files',
-    display = 'Files',
-    key = 'path',  -- Entry key for file collection
-    builtin = 'find_files',
+    title = 'Files',
+    condition = function() return true end,
+    pick = function(opts)
+        builtin.find_files(opts)
+    end,
 }

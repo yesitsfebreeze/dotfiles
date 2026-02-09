@@ -5,9 +5,9 @@ local actions = require('telescope.actions')
 local action_state = require('telescope.actions.state')
 
 return {
-    id = 'sessions',
-    display = 'Sessions',
-    custom = function(picker_opts)
+    title = 'Sessions',
+    condition = function() return true end,
+    pick = function(opts)
         local dir = vim.fn.stdpath('data') .. '/sessions'
         local files = vim.fn.glob(dir .. '/*.vim', false, true)
         local sessions = vim.tbl_map(function(path)
@@ -17,7 +17,7 @@ return {
             }
         end, files)
         
-        pickers.new({}, vim.tbl_extend('force', picker_opts, {
+        pickers.new({}, vim.tbl_extend('force', opts, {
             finder = finders.new_table({
                 results = sessions,
                 entry_maker = function(e)
@@ -32,7 +32,7 @@ return {
                     local selection = action_state.get_selected_entry()
                     if selection then vim.cmd('source ' .. selection.value) end
                 end)
-                return picker_opts.attach_mappings and picker_opts.attach_mappings(bufnr, map) or true
+                return opts.attach_mappings and opts.attach_mappings(bufnr, map) or true
             end,
         })):find()
     end,
