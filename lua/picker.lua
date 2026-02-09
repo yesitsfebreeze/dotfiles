@@ -166,6 +166,8 @@ local function intercept(bufnr, map, opts)
                 state.selected = state.mode
                 actions.close(bufnr)
                 grep_in_files(opts)
+            else
+                vim.notify('No files to grep found', vim.log.levels.WARN)
             end
             return
         end
