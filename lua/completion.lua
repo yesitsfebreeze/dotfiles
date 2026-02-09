@@ -32,6 +32,11 @@ function M.setup(opts)
 					luasnip.lsp_expand(args.body)
 				end,
 			},
+			preselect = cmp.PreselectMode.None,
+			completion = {
+				completeopt = 'menu,menuone,noselect',
+				autocomplete = false,  -- Disable auto-trigger
+			},
 			window = {
 				completion = {
 					border = o.border,
@@ -54,14 +59,28 @@ function M.setup(opts)
 						fallback()
 					end
 				end, { 'i' }),
-				['<CR>'] = cmp.mapping.confirm({ select = true }),
+				['<CR>'] = cmp.mapping.confirm({ select = false }),
+				['<Down>'] = cmp.mapping(function(fallback)
+					if cmp.visible() then
+						cmp.select_next_item()
+					else
+						fallback()
+					end
+				end, { 'i', 's' }),
+				['<Up>'] = cmp.mapping(function(fallback)
+					if cmp.visible() then
+						cmp.select_prev_item()
+					else
+						fallback()
+					end
+				end, { 'i', 's' }),
 				['<Tab>'] = cmp.mapping(function(fallback)
 					if cmp.visible() then
 						cmp.select_next_item()
 					elseif luasnip.expand_or_jumpable() then
 						luasnip.expand_or_jump()
 					else
-						fallback()
+						cmp.complete()
 					end
 				end, { 'i', 's' }),
 				['<S-Tab>'] = cmp.mapping(function(fallback)
@@ -81,7 +100,7 @@ function M.setup(opts)
 				{ name = 'path', priority = 250 },
 			}),
 			experimental = {
-				ghost_text = true,
+				ghost_text = false,
 			},
 		})
 		
@@ -92,7 +111,9 @@ function M.setup(opts)
 		
 		-- Transparent backgrounds
 		if o.transparent then
+			local cmp_group = vim.api.nvim_create_augroup('CompletionConfig', { clear = true })
 			vim.api.nvim_create_autocmd('ColorScheme', {
+				group = cmp_group,
 				pattern = '*',
 				callback = function()
 					vim.api.nvim_set_hl(0, 'CmpNormal', { bg = 'NONE' })

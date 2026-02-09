@@ -13,6 +13,8 @@
 --   color = '#484848'
 -- }
 
+local vim = vim or {}
+
 local M = {}
 
 local defaults = {

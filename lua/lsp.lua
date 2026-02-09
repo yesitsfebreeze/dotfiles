@@ -1,3 +1,5 @@
+local vim = vim or {}
+
 local M = {}
 local add = require('deps').add
 local later = require('deps').later
@@ -15,15 +17,16 @@ local defaults = {
 	},
 	-- UI settings
 	border = "single",
-	transparent = true,
+	-- Diagnostic debounce timeout in milliseconds
+	debounce = 100,
 	-- Keymappings
 	hotkeys = {
-		declaration = "gD",
-		definition = "gd",
-		hover = "K",
-		implementation = "gi",
+		declaration = "dc",
+		definition = "dd",
+		hover = "p",
+		implementation = "ii",
 		signature_help = "<C-h>",
-		type_definition = "<leader>D",
+		type_definition = "td",
 		rename = "<leader>rn",
 		code_action = "<leader>ca",
 		references = "gr",
@@ -63,6 +66,24 @@ function M.setup(opts)
 			ensure_installed = o.ensure_installed,
 			automatic_enable = true,
 		})
+		
+		-- Custom server configurations using vim.lsp.config
+		vim.lsp.config.lua_ls = {
+			settings = {
+				Lua = {
+					diagnostics = {
+						globals = { 'vim' },
+					},
+					workspace = {
+						library = vim.api.nvim_get_runtime_file("", true),
+						checkThirdParty = false,
+					},
+					telemetry = {
+						enable = false,
+					},
+				},
+			},
+		}
 		
 		-- Configure LSP settings for all servers
 		local on_attach = function(client, bufnr)
@@ -115,60 +136,16 @@ function M.setup(opts)
 			end
 		end
 		
+		-- Set up autogroup for LSP autocmds
+		local lsp_group = vim.api.nvim_create_augroup('LspConfig', { clear = true })
+		
 		-- Set up LspAttach autocmd for keybindings
 		vim.api.nvim_create_autocmd('LspAttach', {
+			group = lsp_group,
 			callback = function(args)
 				local client = vim.lsp.get_client_by_id(args.data.client_id)
 				on_attach(client, args.buf)
 			end,
-		})
-		
-		-- Custom server configurations using vim.lsp.config
-		vim.lsp.config.lua_ls = {
-			settings = {
-				Lua = {
-					diagnostics = {
-						globals = { 'vim' },
-					},
-					workspace = {
-						library = vim.api.nvim_get_runtime_file("", true),
-						checkThirdParty = false,
-					},
-					telemetry = {
-						enable = false,
-					},
-				},
-			},
-		}
-	end)
-	
-	-- LSP UI settings
-	if o.transparent then
-		vim.api.nvim_create_autocmd('ColorScheme', {
-			pattern = '*',
-			callback = function()
-				vim.api.nvim_set_hl(0, 'NormalFloat', { bg = 'NONE' })
-				vim.api.nvim_set_hl(0, 'FloatBorder', { bg = 'NONE' })
-			end,
-		})
-	end
-	
-	-- Setup Mason and LSP after plugins are loaded
-	later(function()
-		-- Setup Mason (LSP installer)
-		require('mason').setup({
-			ui = {
-				border = o.border,
-				width = 0.8,
-				height = 0.8,
-			},
-		})
-		
-		-- Bridge between Mason and lspconfig for auto-installation
-		-- mason-lspconfig will automatically enable servers via vim.lsp.enable()
-		require('mason-lspconfig').setup({
-			ensure_installed = o.ensure_installed,
-			automatic_enable = true,
 		})
 		
 		-- Configure diagnostic appearance
@@ -182,16 +159,74 @@ function M.setup(opts)
 					[vim.diagnostic.severity.ERROR] = "✘",
 					[vim.diagnostic.severity.WARN] = "▲",
 					[vim.diagnostic.severity.HINT] = "⚑",
-					[vim.diagnostic.severity.INFO] = "»",
+					[vim.diagnostic.severity.INFO] = "?",
 				},
 			},
 			underline = true,
-			update_in_insert = true,
+			update_in_insert = true,  -- Always show and update diagnostics
 			severity_sort = true,
 			float = {
 				border = o.border,
 				source = 'if_many',
 			},
+		})
+		
+		-- Debounce diagnostic updates in insert mode
+		local diagnostic_timers = {}
+		local pending_diagnostics = {}
+		
+		-- Custom handler that debounces diagnostic updates in insert mode
+		local original_handler = vim.lsp.handlers["textDocument/publishDiagnostics"]
+		vim.lsp.handlers["textDocument/publishDiagnostics"] = function(err, result, ctx, config)
+			local uri = result.uri
+			local bufnr = vim.uri_to_bufnr(uri)
+			
+			-- If not in insert mode, apply diagnostics immediately
+			if vim.api.nvim_get_mode().mode ~= 'i' then
+				original_handler(err, result, ctx, config)
+				return
+			end
+			
+			-- Store the pending diagnostics
+			pending_diagnostics[bufnr] = { err = err, result = result, ctx = ctx, config = config }
+			
+			-- Cancel existing timer for this buffer
+			if diagnostic_timers[bufnr] then
+				vim.fn.timer_stop(diagnostic_timers[bufnr])
+			end
+			
+			-- Schedule applying diagnostics after debounce delay
+			diagnostic_timers[bufnr] = vim.fn.timer_start(o.debounce, function()
+				vim.schedule(function()
+					local pending = pending_diagnostics[bufnr]
+					if pending then
+						original_handler(pending.err, pending.result, pending.ctx, pending.config)
+						pending_diagnostics[bufnr] = nil
+					end
+					diagnostic_timers[bufnr] = nil
+				end)
+			end)
+		end
+		
+		-- Apply pending diagnostics immediately when leaving insert mode
+		vim.api.nvim_create_autocmd('InsertLeave', {
+			group = lsp_group,
+			callback = function()
+				local bufnr = vim.api.nvim_get_current_buf()
+				
+				-- Cancel timer
+				if diagnostic_timers[bufnr] then
+					vim.fn.timer_stop(diagnostic_timers[bufnr])
+					diagnostic_timers[bufnr] = nil
+				end
+				
+				-- Apply any pending diagnostics immediately
+				if pending_diagnostics[bufnr] then
+					local pending = pending_diagnostics[bufnr]
+					original_handler(pending.err, pending.result, pending.ctx, pending.config)
+					pending_diagnostics[bufnr] = nil
+				end
+			end,
 		})
 		
 		-- LSP handlers with square borders
@@ -201,24 +236,6 @@ function M.setup(opts)
 		vim.lsp.handlers["textDocument/signatureHelp"] = vim.lsp.with(
 			vim.lsp.handlers.signature_help, { border = o.border }
 		)
-		
-		-- Custom server configurations using vim.lsp.config
-		vim.lsp.config.lua_ls = {
-			settings = {
-				Lua = {
-					diagnostics = {
-						globals = { 'vim' },
-					},
-					workspace = {
-						library = vim.api.nvim_get_runtime_file("", true),
-						checkThirdParty = false,
-					},
-					telemetry = {
-						enable = false,
-					},
-				},
-			},
-		}
 		
 		-- Manually trigger LSP for already-open buffers
 		vim.schedule(function()
@@ -239,3 +256,4 @@ function M.setup(opts)
 end
 
 return M
+	

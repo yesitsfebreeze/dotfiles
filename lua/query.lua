@@ -1,5 +1,7 @@
 -- Query: Unified search interface with mode selector
 
+local vim = vim or {}
+
 local M = {}
 local keymap = require('keymap')
 local sessions = require('sessions')
@@ -20,10 +22,6 @@ function M.setup(opts)
 	local actions = require('telescope.actions')
 	local action_state = require('telescope.actions.state')
 	local builtin = require('telescope.builtin')
-	local screen = require('screen')
-
-	local panel_width = screen.get().telescope.width
-	local panel_height = screen.get().telescope.height
 	
 	local state = {
 		is_open = false,
@@ -92,6 +90,10 @@ function M.setup(opts)
 	end
 	
 	local function get_layout_config()
+		local screen = require('screen')
+
+		local panel_width = screen.get().telescope.width
+		local panel_height = screen.get().telescope.height
 		return {
 			anchor = 'E',
 			width = panel_width,
@@ -361,35 +363,48 @@ function M.setup(opts)
 		})):find()
 	end
 
-	keymap.rebind({ 'n', 'i' }, opts.hotkey, function()
+	-- Toggle or open picker
+	local function toggle(force_open)
 		vim.cmd('stopinsert')
+		
+		local processed = false
 		
 		if state.is_open then
 			state.is_open = false
-			vim.cmd('stopinsert')
-			return
+			if not force_open then processed = true end
 		end
 		
-		if state.mode and modes_map[state.mode] then
-			if state.view == 'grep' and #state.files > 0 then
-				live_grep_in_files()
+		-- Open if not open and not processed
+		if not state.is_open and not processed then
+			if state.mode and modes_map[state.mode] then
+				if state.view == 'grep' and #state.files > 0 then
+					live_grep_in_files()
+				else
+					modes_map[state.mode].fn()
+				end
 			else
-				modes_map[state.mode].fn()
+				open_picker()
 			end
-		else
-			open_picker()
 		end
-	end, {
+	end
+
+	restore_state()
+	
+	local query_group = vim.api.nvim_create_augroup('RecentFilesQuery', { clear = true })
+	
+	keymap.rebind({ 'n', 'i' }, opts.hotkey, toggle, {
 		noremap = true,
 		silent = true,
 		desc = 'Toggle Query',
 	})
-	
-	-- Restore state from saved file on load
-	restore_state()
+	vim.api.nvim_create_autocmd('VimResized', {
+		group = query_group,
+		callback = function() toggle(true) end,
+	})
 	
 	-- Save state when vim closes
 	vim.api.nvim_create_autocmd('VimLeavePre', {
+		group = query_group,
 		callback = function()
 			save_state()
 		end,

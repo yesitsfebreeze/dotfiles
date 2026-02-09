@@ -81,7 +81,10 @@ function M.setup(opts)
 	vim.opt.virtualedit = "onemore"
 	vim.opt.guicursor = "n-v-c-sm:block-Cursor,i-ci-ve:block-Cursor,r-cr-o:block-Cursor"
 
+	local cursor_group = api.nvim_create_augroup('BlockCursor', { clear = true })
+
 	api.nvim_create_autocmd("ModeChanged", {
+		group = cursor_group,
 		callback = function()
 			local mode = api.nvim_get_mode().mode
 			if mode == "n" then
@@ -101,16 +104,22 @@ function M.setup(opts)
 	-- Set initial color
 	set_cursor_color(o.colors.i)
 
-	api.nvim_create_autocmd("InsertLeavePre", { callback = function()
-		local cur = api.nvim_win_get_cursor(0)
-		last.r, last.c = cur[1], cur[2]
-	end})
+	api.nvim_create_autocmd("InsertLeavePre", {
+		group = cursor_group,
+		callback = function()
+			local cur = api.nvim_win_get_cursor(0)
+			last.r, last.c = cur[1], cur[2]
+		end
+	})
 
-	api.nvim_create_autocmd("InsertLeave", { callback = function()
-		local mode = api.nvim_get_mode().mode
-		if mode == "c" or mode == ":" then return end
-		sch(function() set_cursor(last.r, last.c) end)
-	end})
+	api.nvim_create_autocmd("InsertLeave", {
+		group = cursor_group,
+		callback = function()
+			local mode = api.nvim_get_mode().mode
+			if mode == "c" or mode == ":" then return end
+			sch(function() set_cursor(last.r, last.c) end)
+		end
+	})
 end
 
 return M

@@ -1,3 +1,5 @@
+local  vim  = vim  or  {}
+
 local M = {}
 local add = require('deps').add
 local later = require('deps').later

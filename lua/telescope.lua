@@ -47,8 +47,11 @@ function M.setup(opts)
 			},
 		})
 		
+		local telescope_group = vim.api.nvim_create_augroup('TelescopeConfig', { clear = true })
+		
 		-- Completely disable quickfix window opening
 		vim.api.nvim_create_autocmd('FileType', {
+			group = telescope_group,
 			pattern = 'qf',
 			callback = function(ev)
 				-- Close any quickfix window that opens

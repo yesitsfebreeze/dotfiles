@@ -1,6 +1,8 @@
 -- Screen dimension helpers
 -- Returns calculated dimensions for common UI layouts
 
+local vim = vim or {}
+
 local M = {}
 
 function M.get()

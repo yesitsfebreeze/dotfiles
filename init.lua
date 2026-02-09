@@ -1,6 +1,8 @@
 local vim = vim  or {}
 
- local ModeColors = {
+require('defaults').setup()
+
+local ModeColors = {
 	i = "#5ad2e4",
 	n = "#56ef9b",
 	v = "#e6f05a",
@@ -49,12 +51,15 @@ local HotKeys = {
 		stage_hunk = "<leader>gs",
 		unstage_hunk = "<leader>gu",
 		reset_hunk = "<leader>gr",
-	}
+	},
+	search = {
+		open = "<C-o>",
+		close = "<Esc>",
+		grep = "<Tab>",
+	},
 }
 
--- Set leader key before any plugins load
 local km = vim.keymap.set
-
 vim.g.mapleader = HotKeys.leader
 vim.g.maplocalleader = HotKeys.leader
 
@@ -64,25 +69,27 @@ require('invert').setup({hotkey = HotKeys.to_normal })
 require('statusline').setup({colors = ModeColors})
 require('theme').setup()
 require('completion').setup()
-require('lsp').setup({hotkeys = HotKeys.lsp})
+require('lsp').setup({hotkeys = HotKeys.lsp, debounce = 100})
 require('treesitter').setup({bracket_colors = BracketColors})
 require('gutter').setup({colors = ModeColors})
 require('gittools').setup({hotkeys = HotKeys.gittools})
 require('explorer').setup({hotkey = HotKeys.explorer})
-require('query').setup({hotkey = HotKeys.query, separator = "?"})
+-- require('query').setup({hotkey = HotKeys.query})
+require('search').setup({hotkeys = HotKeys.search})
 require('sessions').setup()
 require('whitespace').setup()
 require('century').setup()
 
 -- Quick Actions
--- <leader>r: Reload config
-keymap.rebind({'i', 'n'}, '<leader>r', function()
+
+-- Reload config
+keymap.rebind('n', '<leader>r', function()
 	vim.cmd('source ~/.config/nvim/init.lua')
 	vim.notify('Config reloaded', vim.log.levels.INFO)
 end, { noremap = true, silent = true, desc = 'Reload config' })
 
--- <leader>p: Paste from system clipboard (insert mode)
-keymap.rebind('i', '<leader>p', '<C-r>+', { noremap = true, desc = 'Paste from clipboard' })
+-- Paste from system clipboard (insert mode)
+keymap.rebind('i', '<C-v>', '<C-r>+', { noremap = true, desc = 'Paste from clipboard' })
 
 -- Command mode shortcut
 keymap.rebind({'i', 'n'}, '<C-k>', function()
@@ -91,7 +98,7 @@ keymap.rebind({'i', 'n'}, '<C-k>', function()
 	vim.schedule(function() vim.api.nvim_feedkeys(':', 'n', false) end)
 end, { noremap = true, silent = true, desc = 'Command mode' })
 
--- highlight clear on ESC
+-- Highlight clear on ESC
 keymap.bind({'n', 'i'}, '<Esc>', function()
 	local buf = vim.api.nvim_get_current_buf()
 	if not vim.api.nvim_buf_is_valid(buf) then return end

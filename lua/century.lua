@@ -2,6 +2,8 @@
 -- and keeps the cursor vertically centered as much as possible
 -- that means you only need to look at the center of your screen
 
+local vim = vim or {}
+
 local M = {}
 
 local ns = vim.api.nvim_create_namespace("century")
@@ -78,7 +80,6 @@ local function center_cursor()
 end
 
 function M.setup()
-  -- Disable scrolloff, we're doing centering manually
   vim.opt.scrolloff = 0
   
   local aug = vim.api.nvim_create_augroup("Century", { clear = true })

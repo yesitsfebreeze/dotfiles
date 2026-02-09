@@ -12,6 +12,8 @@
 --	 }
 -- }
 
+local vim = vim or {}
+
 local M = {}
 
 local g	 = vim.g
@@ -72,8 +74,11 @@ function M.setup(opts)
 		cmd("stopinsert")
 	end, { noremap = true, silent = true })
 
+	local invert_group = api.nvim_create_augroup('ModalInvert', { clear = true })
+
 	-- Only map ESC in insert mode for enabled buffers
 	api.nvim_create_autocmd("BufEnter", {
+		group = invert_group,
 		callback = function()
 			local buf = api.nvim_get_current_buf()
 			if is_enabled(buf) then
@@ -87,6 +92,7 @@ function M.setup(opts)
 	})
 	
 	api.nvim_create_autocmd("ModeChanged", {
+		group = invert_group,
 		pattern = "*:n",
 		callback = function()
 			if not bo.modifiable then return end
@@ -104,6 +110,7 @@ function M.setup(opts)
 	end, { noremap = true, silent = true })
 
 	api.nvim_create_autocmd("BufEnter", {
+		group = invert_group,
 		callback = function()
 			if not bo.modifiable then return end
 			if not enabled() then 

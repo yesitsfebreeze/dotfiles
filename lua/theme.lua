@@ -159,7 +159,9 @@ function M.setup(opts)
 	apply_transparent()
 
 	-- Reapply transparent background after colorscheme changes
+	local theme_group = vim.api.nvim_create_augroup('ThemeConfig', { clear = true })
 	vim.api.nvim_create_autocmd("ColorScheme", {
+		group = theme_group,
 		callback = apply_transparent
 	})
 end

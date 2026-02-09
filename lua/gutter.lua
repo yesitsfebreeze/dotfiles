@@ -16,6 +16,8 @@
 --   }
 -- }
 
+local vim = vim or {}
+
 local add = require('deps').add
 
 local M = {}
@@ -128,13 +130,17 @@ function M.setup(opts)
 	-- Apply highlights immediately
 	apply_highlights()
 
+	local gutter_group = api.nvim_create_augroup('GutterConfig', { clear = true })
+
 	-- Reapply after colorscheme changes
 	api.nvim_create_autocmd("ColorScheme", {
+		group = gutter_group,
 		callback = apply_highlights
 	})
 
 	-- Switch between relative and absolute based on mode
 	api.nvim_create_autocmd("ModeChanged", {
+		group = gutter_group,
 		callback = function()
 			vim.schedule(function()
 				local mode = api.nvim_get_mode().mode
@@ -164,6 +170,7 @@ function M.setup(opts)
 
 	-- Handle buffer/window changes
 	api.nvim_create_autocmd({"BufEnter", "WinEnter", "FocusGained"}, {
+		group = gutter_group,
 		callback = function()
 			local mode = api.nvim_get_mode().mode
 			if mode == "i" then

@@ -104,8 +104,11 @@ function M.setup(opts)
 
 	ensure_sessions_dir()
 
+	local sessions_group = api.nvim_create_augroup('SessionManagement', { clear = true })
+
 	-- Restore cursor position from last session
 	api.nvim_create_autocmd("BufReadPost", {
+		group = sessions_group,
 		callback = function()
 			local mark = api.nvim_buf_get_mark(0, '"')
 			local lcount = api.nvim_buf_line_count(0)
@@ -117,6 +120,7 @@ function M.setup(opts)
 
 	-- Auto-save session on exit
 	api.nvim_create_autocmd('VimLeavePre', {
+		group = sessions_group,
 		callback = function()
 			-- Only save if we have buffers with actual files
 			local has_files = false
@@ -137,6 +141,7 @@ function M.setup(opts)
 
 	-- Handle startup based on arguments
 	api.nvim_create_autocmd('VimEnter', {
+		group = sessions_group,
 		nested = true,
 		callback = function()
 			local args = vim.fn.argv()
