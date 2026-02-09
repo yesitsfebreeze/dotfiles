@@ -264,7 +264,10 @@ local function open(opts)
         state.prompts.filter = ''
         state.prompts.grep = ''
         state.mode = nil
-        if current_buffer then actions.close(current_buffer) end
+        if current_buffer and vim.api.nvim_buf_is_valid(current_buffer) then
+            local picker = action_state.get_current_picker(current_buffer)
+            if picker then pcall(actions.close, current_buffer) end
+        end
         current_buffer = nil
         mode_selector(opts)
         return

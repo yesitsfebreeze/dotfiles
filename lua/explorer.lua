@@ -178,6 +178,19 @@ open_explorer = function(dir, select_file)
 	runtime.oil_win = vim.api.nvim_get_current_win()
 	runtime.oil_buf = vim.api.nvim_get_current_buf()
 	
+	-- Clean up input window if Oil closes through other means
+	vim.api.nvim_create_autocmd('WinClosed', {
+		buffer = runtime.oil_buf,
+		once = true,
+		callback = function()
+			if valid_win(runtime.input_win) then
+				vim.api.nvim_win_close(runtime.input_win, true)
+			end
+			runtime.oil_win, runtime.oil_buf = nil, nil
+			runtime.input_win, runtime.input_buf = nil, nil
+		end,
+	})
+	
 	if select_file then
 		vim.defer_fn(function()
 			if not valid_buf(runtime.oil_buf) then return end
@@ -262,12 +275,25 @@ function M.setup(opts)
 
 	keymap.rebind({'n', 'i'}, o.hotkey, function()
 		vim.cmd('stopinsert')
+		
+		-- Close any Telescope pickers properly
 		for _, win in ipairs(vim.api.nvim_list_wins()) do
 			local ok, buf = pcall(vim.api.nvim_win_get_buf, win)
 			if ok and vim.api.nvim_buf_is_valid(buf) and vim.bo[buf].filetype == 'TelescopePrompt' then
-				vim.api.nvim_win_close(win, true)
+				-- Use Telescope's close action to properly clean up state
+				pcall(function()
+					local actions = require('telescope.actions')
+					local state = require('telescope.actions.state')
+					local picker = state.get_current_picker(buf)
+					if picker then
+						actions.close(buf)
+					else
+						vim.api.nvim_win_close(win, true)
+					end
+				end)
 			end
 		end
+		
 		open_explorer()
 	end, { noremap = true, silent = true, desc = 'Open file explorer' })
 end
