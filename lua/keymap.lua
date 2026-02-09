@@ -8,6 +8,8 @@
 --   keymap.bind('n', '<Esc>', function() print('extra') end, opts)
 --   keymap.rebind('n', '<leader>x', '<Cmd>quit<CR>', opts)
 
+local vim = vim or {}
+
 local M = {}
 
 local km = vim.keymap

@@ -85,20 +85,10 @@ function M.setup(opts)
 					state.filter_input = data.filter_input or ''
 					state.grep_input = data.grep_input or ''
 					state.files = data.files or {}
-					
-					-- Debug output
-					print('Restored state:')
-					print('  mode: ' .. tostring(state.mode))
-					print('  view: ' .. tostring(state.view))
-					print('  filter_input: ' .. tostring(state.filter_input))
-					print('  grep_input: ' .. tostring(state.grep_input))
-					print('  files count: ' .. #state.files)
 					return
 				end
 			end
 		end
-		
-		print('No query state file found')
 	end
 	
 	local function get_layout_config()
@@ -108,6 +98,13 @@ function M.setup(opts)
 			height = panel_height,
 			preview_height = 0.5,
 			prompt_position = 'bottom',
+		}
+	end
+	
+	local function get_picker_defaults()
+		return {
+			layout_strategy = 'vertical',
+			layout_config = get_layout_config(),
 		}
 	end
 	
@@ -202,14 +199,10 @@ function M.setup(opts)
 		save_state()
 		
 		local input = pattern ~= nil and pattern or state.grep_input
-		print('Opening live_grep with input: ' .. tostring(input))
-		
-		builtin.live_grep({
+		local opts = vim.tbl_extend('force', get_picker_defaults(), {
 			default_text = input,
 			prompt_title = 'Live Grep in ' .. #(files or state.files) .. ' files',
 			search_dirs = files or state.files,
-			layout_strategy = 'vertical',
-			layout_config = get_layout_config(),
 			attach_mappings = function(bufnr, map)
 				return setup_common_mappings(bufnr, map, 
 					nil,
@@ -225,6 +218,8 @@ function M.setup(opts)
 				)
 			end,
 		})
+		
+		builtin.live_grep(opts)
 	end
 
 	local function create_builtin_picker(builtin_fn, title, key, mode_name, extra_opts)
@@ -233,13 +228,9 @@ function M.setup(opts)
 		state.view = 'filter'
 		save_state()
 		
-		print('Opening ' .. title .. ' with filter_input: ' .. tostring(state.filter_input))
-		
-		local opts_table = vim.tbl_extend('force', {
+		local opts_table = vim.tbl_extend('force', get_picker_defaults(), {
 			default_text = state.filter_input,
 			prompt_title = title,
-			layout_strategy = 'vertical',
-			layout_config = get_layout_config(),
 			attach_mappings = function(bufnr, map)
 				return setup_common_mappings(bufnr, map,
 					nil,
@@ -276,7 +267,7 @@ function M.setup(opts)
 			}
 		end, files)
 		
-		pickers.new({}, {
+		pickers.new({}, vim.tbl_extend('force', get_picker_defaults(), {
 			prompt_title = 'Sessions',
 			finder = finders.new_table({
 				results = sessions,
@@ -286,8 +277,6 @@ function M.setup(opts)
 			}),
 			sorter = conf.generic_sorter({}),
 			previewer = nil,
-			layout_strategy = 'vertical',
-			layout_config = get_layout_config(),
 			default_text = state.filter_input,
 			attach_mappings = function(bufnr, map)
 				actions.select_default:replace(function()
@@ -298,7 +287,7 @@ function M.setup(opts)
 				end)
 				return setup_common_mappings(bufnr, map)
 			end,
-		}):find()
+		})):find()
 	end
 	
 	local function find_commits_filtered()
@@ -306,15 +295,15 @@ function M.setup(opts)
 		state.mode = 'commits'
 		save_state()
 		
-		builtin.git_commits({
+		local opts = vim.tbl_extend('force', get_picker_defaults(), {
 			default_text = state.filter_input,
 			prompt_title = 'Commits',
-			layout_strategy = 'vertical',
-			layout_config = get_layout_config(),
 			attach_mappings = function(bufnr, map)
 				return setup_common_mappings(bufnr, map)
 			end,
 		})
+		
+		builtin.git_commits(opts)
 	end
 	
 	-- Mode definitions: data-driven configuration
@@ -340,7 +329,7 @@ function M.setup(opts)
 	end
 	
 	open_picker = function()
-		pickers.new({}, {
+		pickers.new({}, vim.tbl_extend('force', get_picker_defaults(), {
 			prompt_title = 'Query',
 			finder = finders.new_table({
 				results = modes,
@@ -350,8 +339,6 @@ function M.setup(opts)
 			}),
 			sorter = conf.generic_sorter({}),
 			previewer = nil,
-			layout_strategy = 'vertical',
-			layout_config = get_layout_config(),
 			attach_mappings = function(bufnr, map)
 				actions.select_default:replace(function()
 					state.is_open = false
@@ -371,7 +358,7 @@ function M.setup(opts)
 				end)
 				return true
 			end,
-		}):find()
+		})):find()
 	end
 
 	keymap.rebind({ 'n', 'i' }, opts.hotkey, function()

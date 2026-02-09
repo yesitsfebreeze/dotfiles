@@ -9,13 +9,13 @@ local vim = vim  or {}
 }
 
 local BracketColors = {
-	'#FFFFFF',
 	'#6ba6f3',
 	'#989898',
 	'#FFFFFF',
 	'#6ba6f3',
 	'#989898',
 	'#FFFFFF',
+	'#6ba6f3',
 }
 
 local keymap = require('keymap')

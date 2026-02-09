@@ -15,6 +15,7 @@
 --   }
 -- }
 
+local vim = vim or {}
 local add = require('deps').add
 
 local M = {}
@@ -45,8 +46,8 @@ end
 
 function M.setup(opts)
 	local o = merge_opts(opts)
-	
-	local modes = {		
+
+	local modes = {
 		n = o.colors.n,
 		i = o.colors.i,
 		v = o.colors.v,
@@ -66,11 +67,11 @@ function M.setup(opts)
 	local e = { fg = '#c0ccdb', bg = 'NONE' }
 
 	require('lualine').setup({
-		options = { component_separators = '', section_separators = '', globalstatus = true, 
+		options = { component_separators = '', section_separators = '', globalstatus = true,
 			theme = { normal = {a=e,b=e,c=e}, insert = {a=e,b=e,c=e}, visual = {a=e,b=e,c=e}, replace = {a=e,b=e,c=e}, command = {a=e,b=e,c=e} }},
 		sections = {}, inactive_sections = {},
 		tabline = {
-			lualine_a = {{ function() return vim.fn.mode()=='c' and ' :' or '   '..m[vim.fn.mode()] end, 
+			lualine_a = {{ function() return vim.fn.mode()=='c' and ' :' or '   '..m[vim.fn.mode()] end,
 				color = function() return {fg=modes[vim.fn.mode()]or'#c0ccdb',gui='bold'} end }},
 			lualine_b = {'branch','diff','diagnostics'},
 			lualine_c = {{ function() return vim.fn.mode()=='c' and vim.fn.getcmdline() or vim.fn.expand('%:~:.') end,
@@ -82,14 +83,14 @@ function M.setup(opts)
 	})
 
 	local pad = '    '
-	
+
 	-- Set highlight before noice setup
 	vim.api.nvim_set_hl(0, 'NoiceCmdlineIconCommand', { fg = o.colors.c, bold = true })
 	vim.api.nvim_set_hl(0, 'NoiceCmdlineIconSearch', { fg = o.colors.c, bold = true })
-	
+
 	require('noice').setup({
-		cmdline = { 
-			enabled = true, 
+		cmdline = {
+			enabled = true,
 			view = 'cmdline',
 			format = {
 				cmdline = { pattern = '^:', icon = pad..'C', lang = 'vim', icon_hl_group = 'NoiceCmdlineIconCommand' },
@@ -102,7 +103,7 @@ function M.setup(opts)
 		},
 		messages = { enabled = true, view = 'mini', view_error = 'mini', view_warn = 'mini' },
 		popupmenu = { enabled = false },
-		views = { 
+		views = {
 			cmdline = { position = { row = 0, col = 0 }, size = { width = '100%', height = 'auto' } },
 			mini = { timeout = 5000 },
 		},

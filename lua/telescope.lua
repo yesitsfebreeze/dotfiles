@@ -8,6 +8,8 @@
 --   borderchars = { '─', '│', '─', '│', '┌', '┐', '┘', '└' }
 -- }
 
+local vim = vim or {}
+
 local M = {}
 local add, later = require('deps').add, require('deps').later
 
@@ -34,9 +36,27 @@ function M.setup(opts)
 				mappings = {
 					i = {
 						["<esc>"] = actions.close,
+						["<C-q>"] = false,  -- Disable send to quickfix (conflicts with quit)
+						["<M-q>"] = false,  -- Disable send all to quickfix
+					},
+					n = {
+						["<C-q>"] = false,
+						["<M-q>"] = false,
 					},
 				},
 			},
+		})
+		
+		-- Completely disable quickfix window opening
+		vim.api.nvim_create_autocmd('FileType', {
+			pattern = 'qf',
+			callback = function(ev)
+				-- Close any quickfix window that opens
+				vim.defer_fn(function()
+					vim.cmd('cclose')
+					vim.cmd('lclose')
+				end, 0)
+			end,
 		})
 	end)
 end

@@ -11,6 +11,8 @@
 --   hotkey = "<C-p>"
 -- }
 
+local vim = vim or {}
+
 local add = require('deps').add
 local keymap = require('keymap')
 

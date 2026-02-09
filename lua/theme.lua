@@ -8,6 +8,8 @@
 --   style = "dark",  -- dark, dark_dimmed, dark_default, dark_high_contrast
 -- }
 
+local vim = vim or {}
+
 local add = require('deps').add
 
 local M = {}

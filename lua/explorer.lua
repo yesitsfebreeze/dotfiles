@@ -9,6 +9,8 @@
 --   hotkey = "<C-e>"
 -- }
 
+local vim = vim or {}
+
 local add = require('deps').add
 local keymap = require('keymap')
 local screen = require('screen')
@@ -141,7 +143,7 @@ function M.setup(opts)
 	-- Bind explorer to hotkey (opens in floating window)
 	keymap.rebind({'n', 'i'}, o.hotkey, function()
 		vim.cmd('stopinsert')
-		
+
 		-- Close any Telescope windows
 		for _, win in ipairs(vim.api.nvim_list_wins()) do
 			if vim.api.nvim_win_is_valid(win) then
@@ -154,7 +156,7 @@ function M.setup(opts)
 				end
 			end
 		end
-		
+
 		require('oil').open_float()
 	end, { noremap = true, silent = true, desc = 'Open file explorer' })
 end
