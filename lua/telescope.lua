@@ -153,7 +153,7 @@ function M._create_default_config(o)
 	end
 
 	local actions = require('telescope.actions')
-	local config = {
+	default_config = {
 		borderchars = M.get_border(),
 		path_display = M.format_path,
 		sorter = M.get_custom_sorter(),
@@ -173,8 +173,6 @@ function M._create_default_config(o)
 			},
 		},
 	}
-
-	default_config = config
 end
 
 
