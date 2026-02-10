@@ -20,7 +20,7 @@ local BracketColors = {
 	'#6ba6f3',
 }
 
-local keymap = require('keymap')
+local keymap = require('key_map')
 
 local HotKeys = {
 	quit = "<C-q>",
@@ -77,22 +77,22 @@ local HotKeys = {
 vim.g.mapleader = HotKeys.leader
 vim.g.maplocalleader = HotKeys.leader
 
-require('telescope').setup({
+require('tele_scope').setup({
     exclude_extensions = { 'sql', 'jpg', 'png', 'pdf', 'lock', 'min.js' }
 })
-require('blockcursor').setup({colors = ModeColors})
+require('block_cursor').setup({colors = ModeColors})
 -- require('invert').setup({hotkey = HotKeys.to_normal })
-require('statusline').setup({colors = ModeColors})
+require('status_line').setup({colors = ModeColors})
 require('theme').setup()
 require('completion').setup()
 require('lsp').setup({hotkeys = HotKeys.lsp, debounce = 100})
-require('treesitter').setup({bracket_colors = BracketColors})
+require('tree_sitter').setup({bracket_colors = BracketColors})
 require('gutter').setup({colors = ModeColors})
-require('gittools').setup({hotkeys = HotKeys.gittools})
+require('git_tools').setup({hotkeys = HotKeys.gittools})
 require('explorer').setup({hotkey = HotKeys.explorer.open, keymaps = HotKeys.explorer})
 require('picker').setup({hotkeys = HotKeys.picker})
 require('sessions').setup()
-require('whitespace').setup()
+require('white_space').setup()
 require('century').setup()
 
 -- Quick Actions

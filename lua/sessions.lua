@@ -14,7 +14,7 @@
 local vim = vim or {}
 
 local add = require('deps').add
-local keymap = require('keymap')
+local keymap = require('key_map')
 
 local M = {}
 

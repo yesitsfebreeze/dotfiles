@@ -3,9 +3,9 @@
 local vim = vim or {}
 
 local M = {}
-local keymap = require('keymap')
+local keymap = require('key_map')
 local sessions = require('sessions')
-local telescope = require('telescope')
+local tele_scope = require('tele_scope')
 local telescope_pickers = require('telescope.pickers')
 local finders = require('telescope.finders')
 local actions = require('telescope.actions')
@@ -94,7 +94,7 @@ end
 
 local function layout()
     local size = require('screen').get().telescope
-    return telescope.get_default_config({
+    return tele_scope.get_default_config({
         layout_strategy = 'vertical',
         layout_config = {
             anchor = 'E',

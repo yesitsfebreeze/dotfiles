@@ -15,6 +15,7 @@ local defaults = {
 }
 
 local default_config = nil
+local setup_complete = false
 
 function M.get_custom_sorter(opts)
 	opts = opts or {}
@@ -129,10 +130,15 @@ function M.get_default_config(overrides)
 end
 
 function M._create_default_config(o)
-	-- Build file_ignore_patterns from exclude_extensions
+	print("DEBUG: _create_default_config called with:")
+	print("  o.exclude_extensions = " .. vim.inspect(o.exclude_extensions))
+	
+	-- Build file_ignore_patterns from exclude_extensions  
 	local ignore_patterns = {}
 	for _, ext in ipairs(o.exclude_extensions) do
-		table.insert(ignore_patterns, '.' .. ext)
+		-- Escape dots for Lua patterns (%.sql matches literal .sql)
+		local escaped = ext:gsub('%.', '%%.')
+		table.insert(ignore_patterns, '%.' .. escaped)
 	end
 	
 	-- Build ripgrep arguments with glob exclusions
@@ -153,7 +159,7 @@ function M._create_default_config(o)
 	end
 
 	local actions = require('telescope.actions')
-	default_config = {
+	default_config = {  -- Set module-level variable (no 'local')
 		borderchars = M.get_border(),
 		path_display = M.format_path,
 		sorter = M.get_custom_sorter(),
@@ -189,14 +195,29 @@ function M.format_path(_, path)
 end
 
 function M.setup(opts)
+	print("DEBUG: M.setup called with opts = " .. vim.inspect(opts))
 	local o = vim.tbl_deep_extend('force', defaults, opts or {})
+	print("DEBUG: After merge, o = " .. vim.inspect(o))
 	
 	add({ source = 'nvim-telescope/telescope.nvim', depends = { 'nvim-lua/plenary.nvim' } })
 	
 	later(function()
 		
 		M._create_default_config(o)
+		
+		print("DEBUG: default_config after creation:")
+		print("  file_ignore_patterns = " .. vim.inspect(default_config.file_ignore_patterns))
+		print("  vimgrep_arguments = " .. vim.inspect(default_config.vimgrep_arguments))
+		
 		require('telescope').setup({ defaults = M.get_default_config() })
+		
+		-- Verify what telescope actually has
+		vim.defer_fn(function()
+			local conf = require('telescope.config').values  
+			print("DEBUG: Telescope config values:")
+			print("  file_ignore_patterns = " .. vim.inspect(conf.file_ignore_patterns))
+			print("  vimgrep_arguments = " .. vim.inspect(conf.vimgrep_arguments))
+		end, 100)
 		
 		local telescope_group = vim.api.nvim_create_augroup('TelescopeConfig', { clear = true })
 		

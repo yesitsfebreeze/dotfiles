@@ -3,7 +3,7 @@ local vim = vim or {}
 local M = {}
 local add = require('deps').add
 local later = require('deps').later
-local keymap = require('keymap')
+local keymap = require('key_map')
 
 local defaults = {
 	-- Auto-install these servers when detected
