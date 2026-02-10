@@ -27,7 +27,6 @@ local HotKeys = {
 	hard_quit = "<C-ESC>",
 	to_normal = "<F24>",
 	leader = " ",
-	explorer = "<C-e>",
 	query = "<C-o>",
 	lsp = {
 		declaration = "gD",
@@ -57,13 +56,30 @@ local HotKeys = {
 		close = "<Esc>",
 		grep = "<Tab>",
 	},
+	explorer = {
+		open = "<C-e>",
+		help = "g?",
+		select = "<CR>",
+		preview = "<C-p>",
+		close = "<C-c>",
+		refresh = "<C-l>",
+		parent = "-",
+		cwd = "_",
+		cd = "`",
+		tcd = "~",
+		sort = "gs",
+		external = "gx",
+		hidden = "g.",
+		trash = "g\\",
+	},
 }
 
-local km = vim.keymap.set
 vim.g.mapleader = HotKeys.leader
 vim.g.maplocalleader = HotKeys.leader
 
-require('telescope').setup()
+require('telescope').setup({
+    exclude_extensions = { 'sql', 'jpg', 'png', 'pdf', 'lock', 'min.js' }
+})
 require('blockcursor').setup({colors = ModeColors})
 -- require('invert').setup({hotkey = HotKeys.to_normal })
 require('statusline').setup({colors = ModeColors})
@@ -73,7 +89,7 @@ require('lsp').setup({hotkeys = HotKeys.lsp, debounce = 100})
 require('treesitter').setup({bracket_colors = BracketColors})
 require('gutter').setup({colors = ModeColors})
 require('gittools').setup({hotkeys = HotKeys.gittools})
-require('explorer').setup({hotkey = HotKeys.explorer})
+require('explorer').setup({hotkey = HotKeys.explorer.open, keymaps = HotKeys.explorer})
 require('picker').setup({hotkeys = HotKeys.picker})
 require('sessions').setup()
 require('whitespace').setup()

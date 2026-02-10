@@ -32,6 +32,20 @@ local function ensure_sessions_dir()
 	end
 end
 
+-- Convert session name back to directory path
+local function session_name_to_path(name)
+	-- Session name has path separators replaced with underscores
+	-- E.g., "Users_feb_.config_nvim" -> "/Users/feb/.config/nvim"
+	local path = name:gsub('_', '/')
+
+	-- Add leading slash for absolute paths (Unix/Mac)
+	if not path:match('^/') then
+		path = '/' .. path
+	end
+
+	return path
+end
+
 local function get_session_name(path)
 	path = path or vim.loop.cwd()
 	-- Normalize path and convert to valid filename
@@ -57,10 +71,23 @@ end
 local function load_session(path)
 	local session_file = get_session_file(path)
 	if fn.filereadable(session_file) == 1 then
+		-- Change to the session's directory before loading
+		if path then
+			local dir = fn.fnamemodify(path, ':p')
+			if fn.isdirectory(dir) == 1 then
+				vim.cmd('cd ' .. fn.fnameescape(dir))
+			end
+		end
 		vim.cmd('silent! source ' .. fn.fnameescape(session_file))
 		return true
 	end
 	return false
+end
+
+-- Public function to load session by name (for picker)
+function M.load_session_by_name(session_name)
+	local path = session_name_to_path(session_name)
+	return load_session(path)
 end
 
 local function delete_session(path)

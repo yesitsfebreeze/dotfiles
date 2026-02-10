@@ -7,10 +7,33 @@ local keymap = require('keymap')
 local screen = require('screen')
 local def = require('defaults')
 local sessions = require('sessions')
+local actions = require('telescope.actions')
+local action_state = require('telescope.actions.state')
+local telescope_module = require('telescope')
 
 local M = {}
 
-local defaults = { hotkey = "<C-e>" }
+local defaults = {
+	hotkey = "<C-e>",
+	keymaps = {
+		help = "g?",
+		select = "<CR>",
+		vsplit = false,
+		split = false,
+		tab = false,
+		preview = "<C-p>",
+		close = "<C-c>",
+		refresh = "<C-l>",
+		parent = "-",
+		cwd = "_",
+		cd = "`",
+		tcd = "~",
+		sort = "gs",
+		external = "gx",
+		hidden = "g.",
+		trash = "g\\",
+	},
+}
 
 local state = { last_dir = nil }
 
@@ -59,16 +82,33 @@ local function valid_buf(buf)
 	return buf and vim.api.nvim_buf_is_valid(buf)
 end
 
-local function close_explorer()
+local function close()
+	runtime.search_active = false
+
+	-- Force exit insert mode if active
+	vim.cmd('stopinsert')
+
+	-- Save current directory from oil
 	if valid_buf(runtime.oil_buf) then
-		local dir = require('oil').get_current_dir(runtime.oil_buf)
-		if dir then state.last_dir = dir; store() end
+		pcall(function()
+			local dir = require('oil').get_current_dir(runtime.oil_buf)
+			if dir then state.last_dir = dir; store() end
+		end)
 	end
-	if valid_win(runtime.input_win) then vim.api.nvim_win_close(runtime.input_win, true) end
-	if valid_win(runtime.oil_win) then vim.api.nvim_win_close(runtime.oil_win, true) end
+
+	-- Close windows with error handling
+	if valid_win(runtime.input_win) then
+		pcall(vim.api.nvim_win_close, runtime.input_win, true)
+	end
+	if valid_win(runtime.oil_win) then
+		pcall(vim.api.nvim_win_close, runtime.oil_win, true)
+	end
+
+	-- Clear runtime state
 	runtime.oil_win, runtime.oil_buf = nil, nil
 	runtime.input_win, runtime.input_buf = nil, nil
 	runtime.search_active = false
+	runtime.focus = 'oil'
 end
 
 local function switch_focus()
@@ -89,11 +129,9 @@ end
 
 local function open_file_search(query)
 	runtime.search_active = true
-	local actions = require('telescope.actions')
-	local action_state = require('telescope.actions.state')
 	local size = screen.get().telescope
-	
-	require('telescope.builtin').find_files({
+
+	require('telescope.builtin').find_files(telescope_module.get_default_config({
 		default_text = query or '',
 		layout_strategy = 'vertical',
 		layout_config = {
@@ -103,8 +141,6 @@ local function open_file_search(query)
 			preview_height = 0.5,
 			prompt_position = 'bottom',
 		},
-		borderchars = require('telescope').get_border(),
-		path_display = require('telescope').format_path,
 		attach_mappings = function(prompt_bufnr)
 			actions.select_default:replace(function()
 				local selection = action_state.get_selected_entry()
@@ -115,9 +151,18 @@ local function open_file_search(query)
 					open_explorer(vim.fn.fnamemodify(path, ':h'), vim.fn.fnamemodify(path, ':t'))
 				end
 			end)
+			-- Override ESC to close both telescope and explorer
+			vim.keymap.set('i', '<Esc>', function()
+				actions.close(prompt_bufnr)
+				close()
+			end, { buffer = prompt_bufnr, noremap = true, silent = true })
+			vim.keymap.set('i', '<C-q>', function()
+				actions.close(prompt_bufnr)
+				close()
+			end, { buffer = prompt_bufnr, noremap = true, silent = true })
 			return true
 		end,
-	})
+	}))
 end
 
 local function create_input_window()
@@ -158,7 +203,7 @@ local function create_input_window()
 				if not runtime.search_active and valid_buf(runtime.input_buf) then
 					local line = vim.api.nvim_buf_get_lines(runtime.input_buf, 0, 1, false)[1] or ''
 					if line ~= '' then
-						close_explorer()
+						close()
 						open_file_search(line)
 					end
 				end
@@ -168,11 +213,12 @@ local function create_input_window()
 	
 	local opts = { buffer = runtime.input_buf, noremap = true, silent = true }
 	vim.keymap.set({'n', 'i'}, '<Tab>', function() vim.cmd('stopinsert'); switch_focus() end, opts)
-	vim.keymap.set({'i', 'n'}, '<Esc>', close_explorer, opts)
+	vim.keymap.set('n', '<Esc>', close, opts)  -- Only in normal mode
+	vim.keymap.set({'n', 'i'}, '<C-q>', close, opts)
 end
 
 open_explorer = function(dir, select_file)
-	close_explorer()
+	close()
 	runtime.focus = 'oil'
 	
 	require('oil').open_float(dir or state.last_dir)
@@ -205,10 +251,11 @@ open_explorer = function(dir, select_file)
 	end
 	
 	create_input_window()
-	
+
 	local opts = { buffer = runtime.oil_buf, noremap = true, silent = true }
-	vim.keymap.set('n', '<Tab>', switch_focus, opts)
-	vim.keymap.set('n', '<Esc>', close_explorer, opts)
+	vim.keymap.set({'n', 'i'}, '<Tab>', switch_focus, opts)
+	vim.keymap.set('n', '<Esc>', close, opts)  -- Only in normal mode
+	vim.keymap.set({'n', 'i'}, '<C-q>', close, opts)
 end
 
 function M.setup(opts)
@@ -218,7 +265,7 @@ function M.setup(opts)
 
 	require('oil').setup({
 		default_file_explorer = true,
-		columns = { "icon" },
+		columns = {},  -- No icon column, filenames start at column 1
 		buf_options = { buflisted = false, bufhidden = "hide" },
 		win_options = {
 			wrap = false, signcolumn = "no", cursorcolumn = false,
@@ -230,26 +277,24 @@ function M.setup(opts)
 		prompt_save_on_select_new_entry = true,
 		cleanup_delay_ms = 2000,
 		lsp_file_methods = { timeout_ms = 1000, autosave_changes = false },
-		constrain_cursor = "editable",
+		constrain_cursor = false,  -- Allow cursor at column 1
 		watch_for_changes = false,
 		keymaps = {
-			["g?"] = "actions.show_help",
-			["<CR>"] = "actions.select",
-			["<C-s>"] = "actions.select_vsplit",
-			["<C-h>"] = "actions.select_split",
-			["<C-t>"] = "actions.select_tab",
-			["<C-p>"] = "actions.preview",
-			["<C-c>"] = "actions.close",
+			[o.keymaps.help] = o.keymaps.help and "actions.show_help",
+			[o.keymaps.select] = o.keymaps.select and "actions.select",
+			[o.keymaps.preview] = o.keymaps.preview and "actions.preview",
+			[o.keymaps.close] = o.keymaps.close and "actions.close",
 			["<Esc>"] = false,
-			["<C-l>"] = "actions.refresh",
-			["-"] = "actions.parent",
-			["_"] = "actions.open_cwd",
-			["`"] = "actions.cd",
-			["~"] = "actions.tcd",
-			["gs"] = "actions.change_sort",
-			["gx"] = "actions.open_external",
-			["g."] = "actions.toggle_hidden",
-			["g\\"] = "actions.toggle_trash",
+			["<C-q>"] = false,
+			[o.keymaps.refresh] = o.keymaps.refresh and "actions.refresh",
+			[o.keymaps.parent] = o.keymaps.parent and "actions.parent",
+			[o.keymaps.cwd] = o.keymaps.cwd and "actions.open_cwd",
+			[o.keymaps.cd] = o.keymaps.cd and "actions.cd",
+			[o.keymaps.tcd] = o.keymaps.tcd and "actions.tcd",
+			[o.keymaps.sort] = o.keymaps.sort and "actions.change_sort",
+			[o.keymaps.external] = o.keymaps.external and "actions.open_external",
+			[o.keymaps.hidden] = o.keymaps.hidden and "actions.toggle_hidden",
+			[o.keymaps.trash] = o.keymaps.trash and "actions.toggle_trash",
 		},
 		use_default_keymaps = true,
 		view_options = {

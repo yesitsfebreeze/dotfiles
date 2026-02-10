@@ -1,22 +1,10 @@
--- Theme setup using GitHub Dark theme with Blink Contrast colors:
--- - Loads the GitHub Dark colorscheme
--- - Configures transparent background
--- - Overrides colors with Blink Contrast palette
---
--- Options:
--- {
---   style = "dark",  -- dark, dark_dimmed, dark_default, dark_high_contrast
--- }
+-- Theme setup
 
 local vim = vim or {}
 
 local add = require('deps').add
 
 local M = {}
-
-local defaults = {
-	style = "dark_dimmed",
-}
 
 local function apply_transparent()
 	vim.cmd([[
@@ -51,92 +39,29 @@ local function apply_transparent()
 	]])
 end
 
-function M.setup(opts)
-	local o = vim.tbl_deep_extend('force', defaults, opts or {})
-	
-	add({ source = 'projekt0n/github-nvim-theme' })
-	
-	-- Configure GitHub theme with Blink Contrast color overrides
-	require('github-theme').setup({
-		options = {
-			transparent = false,
-			styles = {
-				comments = 'italic',
-				functions = 'NONE',
-				keywords = 'NONE',
-				variables = 'NONE',
-			},
+function M.setup()
+	add({ source = 'datsfilipe/vesper.nvim' })
+	vim.g.nord_contrast = true
+	vim.g.nord_borders = true
+	vim.g.nord_disable_background = true
+	vim.g.nord_italic = false
+	vim.g.nord_uniform_diff_background = true
+	vim.g.nord_bold = false
+
+	require('vesper').setup({
+		transparent = true,
+		italics = {
+			comments = false,
+			keywords = false,
+			functions = false,
+			strings = false,
+			variables = false,
 		},
-		palettes = {
-			github_dark_dimmed = {
-				-- Blink Contrast color overrides
-				canvas = {
-					default = "#131719",
-					overlay = "#1e2427",
-					inset = "#0a0c0d",
-					subtle = "#1a1f22",
-				},
-				fg = {
-					default = "#c0ccdb",
-					muted = "#8a9ca6",
-					subtle = "#6b828d",
-					on_emphasis = "#ffffff",
-				},
-				border = {
-					default = "#343f44",
-					muted = "#293236",
-					subtle = "#252c30",
-				},
-				-- Syntax colors from Blink Contrast
-				accent = {
-					fg = "#5298c4",
-					emphasis = "#5298c4",
-					muted = "#5298c4",
-					subtle = "#5298c4",
-				},
-				danger = {
-					fg = "#ba4855",
-					emphasis = "#ba4855",
-					muted = "#ba4855",
-					subtle = "#2a1719",
-				},
-				success = {
-					fg = "#7a9a16",
-					emphasis = "#7a9a16",
-					muted = "#7a9a16",
-					subtle = "#1a2418",
-				},
-				attention = {
-					fg = "#f7b83d",
-					emphasis = "#f7b83d",
-					muted = "#f7b83d",
-					subtle = "#2a2519",
-				},
-				done = {
-					fg = "#a669bc",
-					emphasis = "#a669bc",
-					muted = "#a669bc",
-					subtle = "#251a28",
-				},
-			}
-		},
-		specs = {
-			github_dark_dimmed = {
-				syntax = {
-					keyword = "#d4856a",
-					conditional = "#d4856a",
-					number = "#a669bc",
-					type = "#f7b83d",
-					string = "#84c4ce",
-					comment = "#4e5c66",
-					constant = "#a669bc",
-					func = "#5298c4",
-					variable = "#c0ccdb",
-					operator = "#d4856a",
-				},
-			}
-		}
+		overrides = {},
+		palette_overrides = {}
 	})
+
+	vim.cmd.colorscheme('vesper')
 	
 	-- Configure square borders
 	vim.opt.fillchars = {
@@ -148,7 +73,6 @@ function M.setup(opts)
 		horiz = '─',
 	}
 
-	vim.cmd("colorscheme github_dark_dimmed")
 	apply_transparent()
 
 	-- Reapply transparent background after colorscheme changes

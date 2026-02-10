@@ -8,7 +8,6 @@ local sessions = require('sessions')
 local telescope = require('telescope')
 local telescope_pickers = require('telescope.pickers')
 local finders = require('telescope.finders')
-local conf = require('telescope.config').values
 local actions = require('telescope.actions')
 local action_state = require('telescope.actions.state')
 local builtin = require('telescope.builtin')
@@ -95,7 +94,7 @@ end
 
 local function layout()
     local size = require('screen').get().telescope
-    return {
+    return telescope.get_default_config({
         layout_strategy = 'vertical',
         layout_config = {
             anchor = 'E',
@@ -104,9 +103,7 @@ local function layout()
             preview_height = 0.5,
             prompt_position = 'bottom',
         },
-        borderchars = telescope.get_border(),
-        path_display = telescope.format_path,
-    }
+    })
 end
 
 local function collect_files(picker, mode_id)
@@ -114,11 +111,18 @@ local function collect_files(picker, mode_id)
     local seen = {}
     
     local config = picker_configs[mode_id]
-    if not config or not config.key then return files end
+    -- Try config.key first, then common field names
+    local keys_to_try = config and config.key and { config.key } or { 'filename', 'path', 'value' }
     
     for entry in picker.manager:iter() do
         if entry then
-            local file = entry[config.key]
+            local file = nil
+            for _, key in ipairs(keys_to_try) do
+                if entry[key] then
+                    file = entry[key]
+                    break
+                end
+            end
             if file and not seen[file] then
                 seen[file] = true
                 table.insert(files, file)
@@ -228,7 +232,8 @@ end
 
 local function mode_selector(opts)
     local mode_list = get_available_modes()
-    
+    local conf = require('telescope.config').values
+
     telescope_pickers.new(vim.tbl_extend('force', layout(), {
         prompt_title = 'Query',
         finder = finders.new_table({

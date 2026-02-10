@@ -61,7 +61,7 @@ function M.setup(opts)
 			untracked    = { text = '▎' },
 		},
 		signcolumn = true,
-		numhl      = false,
+		numhl      = true,
 		linehl     = false,
 		word_diff  = false,
 		watch_gitdir = {
