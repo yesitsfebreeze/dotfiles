@@ -62,7 +62,18 @@ function M.setup(opts)
 			lualine_b = {'branch','diff','diagnostics'},
 			lualine_c = {{ function() return vim.fn.mode()=='c' and vim.fn.getcmdline() or vim.fn.expand('%:~:.') end,
 				color = function() return vim.fn.mode()=='c' and {fg=modes.c} or nil end }},
-			lualine_x = { function() return vim.fn.mode()~='c' and vim.bo.filetype or '' end },
+			lualine_x = { function()
+				if vim.fn.mode() == 'c' then return '' end
+				local title = vim.b.query_title
+				if title then
+					local count = vim.b.query_count
+					if count and count > 0 then
+						return title .. ' (' .. count .. ')'
+					end
+					return title
+				end
+				return vim.bo.filetype
+			end },
 			lualine_y = { function() return vim.fn.mode()~='c' and vim.fn.line('.')..':'..vim.fn.col('.') or '' end },
 			lualine_z = {{ function() return vim.fn.mode()~='c' and os.date('%H:%M') or '' end }},
 		},

@@ -114,18 +114,9 @@ local function restore()
 end
 
 local function layout()
-    local size = require('feb/screen').get().telescope
-    local tele_scope = require('feb/telescope')
-    return tele_scope.get_default_config({
-        layout_strategy = 'vertical',
-        layout_config = {
-            anchor = 'E',
-            width = size.width,
-            height = size.height,
-            preview_height = 0.5,
-            prompt_position = 'bottom',
-        },
-    })
+    -- All layout config is now in telescope defaults
+    -- This function just returns the base config for consistency
+    return require('feb/telescope').get_default_config()
 end
 
 local function collect_files(picker, mode_id)
@@ -174,7 +165,11 @@ local function close()
     
     state.is_open = false
     store()
-    if current_buffer then actions.close(current_buffer) end
+    if current_buffer then
+        -- Force buffer to be unmodified to prevent save prompt
+        pcall(vim.api.nvim_buf_set_option, current_buffer, 'modified', false)
+        actions.close(current_buffer)
+    end
     current_buffer = nil
 end
 
@@ -192,6 +187,18 @@ end
 
 local function intercept(bufnr, map, opts)
     current_buffer = bufnr
+
+    -- Set query title for statusline display
+    local title
+    if state.view == GREP then
+        title = 'Grep'
+    elseif state.mode and picker_configs[state.mode] then
+        title = picker_configs[state.mode].title
+    else
+        title = 'Query'
+    end
+    vim.b[bufnr].query_title = title
+
     map('i', opts.hotkeys.close, close)
     
     map('i', opts.hotkeys.switch, function()
@@ -206,6 +213,7 @@ local function intercept(bufnr, map, opts)
                 state.view = GREP
                 state.files = files
                 state.selected = state.mode
+                pcall(vim.api.nvim_buf_set_option, bufnr, 'modified', false)
                 actions.close(bufnr)
                 grep_in_files(opts)
             else
@@ -219,6 +227,7 @@ local function intercept(bufnr, map, opts)
             get_mode_prompts().grep = p:_get_prompt()
             state.view = FILTER
             store()
+            pcall(vim.api.nvim_buf_set_option, bufnr, 'modified', false)
             actions.close(bufnr)
             if PICKERS[state.mode] then
                 PICKERS[state.mode]()
@@ -316,6 +325,7 @@ local function mode_selector(opts)
                     -- Close picker properly through our close function
                     state.is_open = false
                     store()
+                    pcall(vim.api.nvim_buf_set_option, bufnr, 'modified', false)
                     pcall(actions.close, bufnr)
                     current_buffer = nil
                     
@@ -340,6 +350,7 @@ local function mode_selector(opts)
                 if selection and selection.value then
                     local selected_mode = selection.value.id
                     state.mode = selected_mode
+                    pcall(vim.api.nvim_buf_set_option, bufnr, 'modified', false)
                     close()
                     if PICKERS[selected_mode] then
                         PICKERS[selected_mode]()
@@ -357,7 +368,10 @@ local function open(opts)
         state.mode = nil
         if current_buffer and vim.api.nvim_buf_is_valid(current_buffer) then
             local picker = action_state.get_current_picker(current_buffer)
-            if picker then pcall(actions.close, current_buffer) end
+            if picker then
+                pcall(vim.api.nvim_buf_set_option, current_buffer, 'modified', false)
+                pcall(actions.close, current_buffer)
+            end
         end
         current_buffer = nil
         mode_selector(opts)

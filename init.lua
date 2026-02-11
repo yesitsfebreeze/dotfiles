@@ -58,6 +58,7 @@ local HotKeys = {
 	},
 	explorer = {
 		open = "<C-e>",
+		reveal = "<C-r>",
 		help = "g?",
 		select = "<CR>",
 		preview = "<C-p>",
@@ -77,7 +78,11 @@ local HotKeys = {
 vim.g.mapleader = HotKeys.leader
 vim.g.maplocalleader = HotKeys.leader
 
-require('feb/telescope').setup({})
+require('feb/telescope').setup({
+	max_results = 500,
+	max_results_per_file = 10,
+	exclude_extension = { "sql" },
+})
 require('feb/blockcursor').setup({colors = ModeColors})
 -- require('feb/invert').setup({hotkey = HotKeys.to_normal })
 require('feb/statusline').setup({colors = ModeColors})
