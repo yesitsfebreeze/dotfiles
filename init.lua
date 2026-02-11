@@ -1,6 +1,6 @@
 local vim = vim  or {}
 
-require('defaults').setup()
+require('feb/defaults').setup()
 
 local ModeColors = {
 	i = "#5ad2e4",
@@ -20,7 +20,7 @@ local BracketColors = {
 	'#6ba6f3',
 }
 
-local keymap = require('key_map')
+local keymap = require('feb/keymap')
 
 local HotKeys = {
 	quit = "<C-q>",
@@ -77,23 +77,21 @@ local HotKeys = {
 vim.g.mapleader = HotKeys.leader
 vim.g.maplocalleader = HotKeys.leader
 
-require('tele_scope').setup({
-    exclude_extensions = { 'sql', 'jpg', 'png', 'pdf', 'lock', 'min.js' }
-})
-require('block_cursor').setup({colors = ModeColors})
--- require('invert').setup({hotkey = HotKeys.to_normal })
-require('status_line').setup({colors = ModeColors})
-require('theme').setup()
-require('completion').setup()
-require('lsp').setup({hotkeys = HotKeys.lsp, debounce = 100})
-require('tree_sitter').setup({bracket_colors = BracketColors})
-require('gutter').setup({colors = ModeColors})
-require('git_tools').setup({hotkeys = HotKeys.gittools})
-require('explorer').setup({hotkey = HotKeys.explorer.open, keymaps = HotKeys.explorer})
-require('picker').setup({hotkeys = HotKeys.picker})
-require('sessions').setup()
-require('white_space').setup()
-require('century').setup()
+require('feb/telescope').setup({})
+require('feb/blockcursor').setup({colors = ModeColors})
+-- require('feb/invert').setup({hotkey = HotKeys.to_normal })
+require('feb/statusline').setup({colors = ModeColors})
+require('feb/theme').setup()
+require('feb/completion').setup()
+require('feb/lsp').setup({hotkeys = HotKeys.lsp, debounce = 100})
+require('feb/treesitter').setup({bracket_colors = BracketColors})
+require('feb/gutter').setup({colors = ModeColors})
+require('feb/gittools').setup({hotkeys = HotKeys.gittools})
+require('feb/sessions').setup()
+require('feb/whitespace').setup()
+require('feb/century').setup()
+require('feb/explorer').setup({hotkeys = HotKeys.explorer})
+require('feb/picker').setup({hotkeys = HotKeys.picker})
 
 -- Quick Actions
 

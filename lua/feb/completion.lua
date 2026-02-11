@@ -1,6 +1,6 @@
 local M = {}
-local add = require('deps').add
-local later = require('deps').later
+local add = require('feb/deps').add
+local later = require('feb/deps').later
 
 local defaults = {
 	border = "single",

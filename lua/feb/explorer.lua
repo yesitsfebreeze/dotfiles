@@ -2,14 +2,13 @@
 
 local vim = vim or {}
 
-local add = require('deps').add
-local keymap = require('key_map')
-local screen = require('screen')
-local def = require('defaults')
-local sessions = require('sessions')
+local add = require('feb/deps').add
+local keymap = require('feb/keymap')
+local screen = require('feb/screen')
+local def = require('feb/defaults')
+local sessions = require('feb/sessions')
 local actions = require('telescope.actions')
 local action_state = require('telescope.actions.state')
-local tele_scope = require('tele_scope')
 
 local M = {}
 
@@ -130,6 +129,7 @@ end
 local function open_file_search(query)
 	runtime.search_active = true
 	local size = screen.get().telescope
+	local tele_scope = require('feb/telescope')
 
 	require('telescope.builtin').find_files(tele_scope.get_default_config({
 		default_text = query or '',

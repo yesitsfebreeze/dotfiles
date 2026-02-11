@@ -4,11 +4,12 @@
 -- - Other modules can just use telescope without setup
 
 local vim = vim or {}
-local def = require('defaults')
-local screen = require('screen')
+local deps = require('feb/deps')
+local def = require('feb/defaults')
+local screen = require('feb/screen')
 
 local M = {}
-local add, later = require('deps').add, require('deps').later
+local add, later = deps.add, deps.later
 
 local defaults = {
 	exclude_extensions = {},  -- File extensions to exclude (e.g., {'jpg', 'png', 'pdf'})
@@ -19,9 +20,8 @@ local setup_complete = false
 
 function M.get_custom_sorter(opts)
 	opts = opts or {}
-	local conf = require('telescope.config').values
 	local sorters = require('telescope.sorters')
-	local default_sorter = conf.file_sorter(opts)
+	local default_sorter = sorters.get_fuzzy_file(opts)
 	
 	local original_scoring = default_sorter.scoring_function
 	local original_highlighter = default_sorter.highlighter
@@ -130,9 +130,6 @@ function M.get_default_config(overrides)
 end
 
 function M._create_default_config(o)
-	print("DEBUG: _create_default_config called with:")
-	print("  o.exclude_extensions = " .. vim.inspect(o.exclude_extensions))
-	
 	-- Build file_ignore_patterns from exclude_extensions  
 	local ignore_patterns = {}
 	for _, ext in ipairs(o.exclude_extensions) do
@@ -150,6 +147,7 @@ function M._create_default_config(o)
 		'--line-number',
 		'--column',
 		'--smart-case',
+		'--max-count=1000',  -- Limit results per file for performance
 	}
 	
 	-- Add glob exclusions for each extension
@@ -159,6 +157,15 @@ function M._create_default_config(o)
 	end
 
 	local actions = require('telescope.actions')
+	
+	-- Non-blocking close action for better performance
+	local function fast_close(prompt_bufnr)
+		-- Close immediately without waiting for cleanup
+		vim.schedule(function()
+			actions.close(prompt_bufnr)
+		end)
+	end
+	
 	default_config = {  -- Set module-level variable (no 'local')
 		borderchars = M.get_border(),
 		path_display = M.format_path,
@@ -167,13 +174,20 @@ function M._create_default_config(o)
 		vimgrep_arguments = vimgrep_arguments,
 		file_sorter = M.get_custom_sorter,
 		generic_sorter = M.get_custom_sorter,
+		
+		-- Performance optimizations
+		cache_picker = false,  -- Don't cache picker state (prevents memory buildup)
+		scroll_strategy = 'limit',  -- Limit scrolling for performance
+		selection_strategy = 'reset',  -- Reset selection on prompt change
+		
 		mappings = {
 			i = {
-				["<esc>"] = actions.close,
+				["<esc>"] = fast_close,
 				["<C-q>"] = false,
 				["<M-q>"] = false,
 			},
 			n = {
+				["<esc>"] = fast_close,
 				["<C-q>"] = false,
 				["<M-q>"] = false,
 			},
@@ -195,29 +209,13 @@ function M.format_path(_, path)
 end
 
 function M.setup(opts)
-	print("DEBUG: M.setup called with opts = " .. vim.inspect(opts))
 	local o = vim.tbl_deep_extend('force', defaults, opts or {})
-	print("DEBUG: After merge, o = " .. vim.inspect(o))
 	
 	add({ source = 'nvim-telescope/telescope.nvim', depends = { 'nvim-lua/plenary.nvim' } })
 	
 	later(function()
-		
 		M._create_default_config(o)
-		
-		print("DEBUG: default_config after creation:")
-		print("  file_ignore_patterns = " .. vim.inspect(default_config.file_ignore_patterns))
-		print("  vimgrep_arguments = " .. vim.inspect(default_config.vimgrep_arguments))
-		
 		require('telescope').setup({ defaults = M.get_default_config() })
-		
-		-- Verify what telescope actually has
-		vim.defer_fn(function()
-			local conf = require('telescope.config').values  
-			print("DEBUG: Telescope config values:")
-			print("  file_ignore_patterns = " .. vim.inspect(conf.file_ignore_patterns))
-			print("  vimgrep_arguments = " .. vim.inspect(conf.vimgrep_arguments))
-		end, 100)
 		
 		local telescope_group = vim.api.nvim_create_augroup('TelescopeConfig', { clear = true })
 		

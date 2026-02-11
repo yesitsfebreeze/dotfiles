@@ -13,8 +13,8 @@
 
 local vim = vim or {}
 
-local add = require('deps').add
-local keymap = require('key_map')
+local add = require('feb/deps').add
+local keymap = require('feb/keymap')
 
 local M = {}
 

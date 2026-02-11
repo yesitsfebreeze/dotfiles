@@ -1,9 +1,9 @@
 local  vim  = vim  or  {}
 
 local M = {}
-local add = require('deps').add
-local later = require('deps').later
-local keymap = require('key_map')
+local add = require('feb/deps').add
+local later = require('feb/deps').later
+local keymap = require('feb/keymap')
 
 local defaults = {
 	hotkeys = {

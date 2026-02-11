@@ -16,7 +16,7 @@
 --   }
 -- }
 
-local add = require('deps').add
+local add = require('feb/deps').add
 
 local M = {}
 

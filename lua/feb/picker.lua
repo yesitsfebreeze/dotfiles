@@ -3,9 +3,8 @@
 local vim = vim or {}
 
 local M = {}
-local keymap = require('key_map')
-local sessions = require('sessions')
-local tele_scope = require('tele_scope')
+local keymap = require('feb/keymap')
+local sessions = require('feb/sessions')
 local telescope_pickers = require('telescope.pickers')
 local finders = require('telescope.finders')
 local actions = require('telescope.actions')
@@ -31,22 +30,19 @@ local state = {
     is_open = false,
     mode = nil,
     view = FILTER,
-    prompts = {
-        filter = '',
-        grep = '',
-    },
+    prompts = {},  -- Will store per-mode: { mode_id = { filter = '', grep = '' } }
     files = {},
     selected = nil,
 }
 
--- Load all picker configs from lua/pickers/
+-- Load all picker configs from lua/feb/pickers/
 local function load_pickers()
-    local picker_dir = vim.fn.stdpath('config') .. '/lua/pickers'
+    local picker_dir = vim.fn.stdpath('config') .. '/lua/feb/pickers'
     local files = vim.fn.glob(picker_dir .. '/*.lua', false, true)
     
     for _, file in ipairs(files) do
         local id = vim.fn.fnamemodify(file, ':t:r')
-        local ok, config = pcall(require, 'pickers.' .. id)
+        local ok, config = pcall(require, 'feb.pickers.' .. id)
         if ok and config then
             picker_configs[id] = config
         end
@@ -84,16 +80,42 @@ local function restore()
     local ok, data = pcall(vim.fn.json_decode, json)
     if not (ok and data) then return end
 
-    -- Migrate old format
-    if data.filter_input then 
-        data.prompts = { filter = data.filter_input, grep = data.grep_input or '' } 
+    -- Ensure prompts is a proper nested table structure
+    if type(data.prompts) ~= 'table' then
+        data.prompts = {}
+    else
+        -- Migrate old flat format: { filter = '...', grep = '...' }
+        -- to nested format: { [mode_id] = { filter = '...', grep = '...' } }
+        if data.prompts.filter or data.prompts.grep then
+            -- This is the old flat format, wrap it under a default mode if we have one
+            if data.mode then
+                data.prompts = { [data.mode] = { 
+                    filter = data.prompts.filter or '', 
+                    grep = data.prompts.grep or '' 
+                } }
+            else
+                data.prompts = {}
+            end
+        end
+    end
+    
+    -- Migrate very old format with top-level filter_input/grep_input
+    if data.filter_input and data.mode then 
+        if not data.prompts[data.mode] then
+            data.prompts[data.mode] = {}
+        end
+        data.prompts[data.mode].filter = data.filter_input
+        data.prompts[data.mode].grep = data.grep_input or ''
+        data.filter_input = nil
+        data.grep_input = nil
     end
     
     state = vim.tbl_deep_extend('force', state, data)
 end
 
 local function layout()
-    local size = require('screen').get().telescope
+    local size = require('feb/screen').get().telescope
+    local tele_scope = require('feb/telescope')
     return tele_scope.get_default_config({
         layout_strategy = 'vertical',
         layout_config = {
@@ -134,12 +156,19 @@ local function collect_files(picker, mode_id)
 end
 
 local function close()
-    if current_buffer then
+    -- Save current prompt before closing
+    if current_buffer and state.mode then
         local p = action_state.get_current_picker(current_buffer)
         if p then
             local prompt = p:_get_prompt()
-            if state.view == FILTER then state.prompts.filter = prompt end
-            if state.view == GREP then state.prompts.grep = prompt end
+            if not state.prompts[state.mode] then
+                state.prompts[state.mode] = { filter = '', grep = '' }
+            end
+            if state.view == FILTER then
+                state.prompts[state.mode].filter = prompt
+            elseif state.view == GREP then
+                state.prompts[state.mode].grep = prompt
+            end
         end
     end
     
@@ -152,6 +181,15 @@ end
 -- Forward declaration
 local grep_in_files
 
+-- Helper to get prompts for current mode
+local function get_mode_prompts()
+    if not state.mode then return { filter = '', grep = '' } end
+    if not state.prompts[state.mode] then
+        state.prompts[state.mode] = { filter = '', grep = '' }
+    end
+    return state.prompts[state.mode]
+end
+
 local function intercept(bufnr, map, opts)
     current_buffer = bufnr
     map('i', opts.hotkeys.close, close)
@@ -161,7 +199,7 @@ local function intercept(bufnr, map, opts)
             local p = action_state.get_current_picker(bufnr)
             if not p or not p.manager then return end
             
-            state.prompts.filter = p:_get_prompt()
+            get_mode_prompts().filter = p:_get_prompt()
             local files = collect_files(p, state.mode)
 
             if #files > 0 then
@@ -178,7 +216,7 @@ local function intercept(bufnr, map, opts)
 
         if state.view == GREP then
             local p = action_state.get_current_picker(bufnr)
-            state.prompts.grep = p:_get_prompt()
+            get_mode_prompts().grep = p:_get_prompt()
             state.view = FILTER
             store()
             actions.close(bufnr)
@@ -194,7 +232,7 @@ end
 
 grep_in_files = function(opts)
     local picker_opts = vim.tbl_extend('force', layout(), {
-        default_text = state.prompts.grep,
+        default_text = get_mode_prompts().grep,
         prompt_title = 'Live Grep in ' .. #state.files .. ' files',
         search_dirs = state.files,
         attach_mappings = function(bufnr, map)
@@ -207,7 +245,7 @@ end
 local function configure_picker(id, config, opts)
     PICKERS[id] = function(extra_opts)
         local picker_opts = vim.tbl_extend('force', layout(), {
-            default_text = state.prompts.filter,
+            default_text = get_mode_prompts().filter,
             prompt_title = config.title,
             attach_mappings = function(bufnr, map)
                 return intercept(bufnr, map, opts)
@@ -246,14 +284,61 @@ local function mode_selector(opts)
         previewer = nil,
         attach_mappings = function(bufnr, map)
             current_buffer = bufnr
+            
+            -- Auto-select on unique prefix match
+            local auto_selecting = false
+            local function check_auto_select()
+                if auto_selecting then return end
+                
+                local picker = action_state.get_current_picker(bufnr)
+                if not picker then return end
+                
+                local prompt = picker:_get_prompt()
+                if not prompt or prompt == '' then return end
+                
+                -- Find all entries that start with the prompt (case-insensitive)
+                local matches = {}
+                local prompt_lower = prompt:lower()
+                
+                for entry in picker.manager:iter() do
+                    local title = entry.ordinal or ''
+                    if title:lower():sub(1, #prompt) == prompt_lower then
+                        table.insert(matches, entry)
+                    end
+                end
+                
+                -- Auto-select if exactly one unique match
+                if #matches == 1 then
+                    auto_selecting = true
+                    local selected_mode = matches[1].value.id
+                    state.mode = selected_mode
+                    
+                    -- Close picker properly through our close function
+                    state.is_open = false
+                    store()
+                    pcall(actions.close, bufnr)
+                    current_buffer = nil
+                    
+                    if PICKERS[selected_mode] then
+                        vim.schedule(function()
+                            PICKERS[selected_mode]()
+                        end)
+                    end
+                end
+            end
+            
+            -- Monitor prompt changes for auto-selection
+            vim.api.nvim_create_autocmd('TextChangedI', {
+                buffer = bufnr,
+                callback = function()
+                    vim.schedule(check_auto_select)
+                end,
+            })
+            
             actions.select_default:replace(function()
                 local selection = action_state.get_selected_entry()
                 if selection and selection.value then
                     local selected_mode = selection.value.id
-                    if state.mode ~= selected_mode then
-                        state.prompts.filter = ''
-                        state.prompts.grep = ''
-                    end
                     state.mode = selected_mode
                     close()
                     if PICKERS[selected_mode] then
@@ -269,8 +354,6 @@ end
 local function open(opts)
     -- If already open, clear prompts and switch to mode selector
     if state.is_open then
-        state.prompts.filter = ''
-        state.prompts.grep = ''
         state.mode = nil
         if current_buffer and vim.api.nvim_buf_is_valid(current_buffer) then
             local picker = action_state.get_current_picker(current_buffer)
@@ -283,32 +366,7 @@ local function open(opts)
     
     state.is_open = true
     
-    -- If we have a previous mode, open that picker directly
-    if state.mode and PICKERS[state.mode] then
-        -- Check if mode is still available (condition may have changed)
-        local config = picker_configs[state.mode]
-        
-        if config and config.condition() then
-            if state.view == GREP and state.files and #state.files > 0 then
-                local ok = pcall(grep_in_files, opts)
-                if not ok then
-                    state.mode = nil
-                    mode_selector(opts)
-                end
-            else
-                state.view = FILTER
-                local ok = pcall(PICKERS[state.mode])
-                if not ok then
-                    state.mode = nil
-                    mode_selector(opts)
-                end
-            end
-            return
-        else
-            state.mode = nil
-        end
-    end
-    
+    -- Always start with mode selector
     mode_selector(opts)
 end
 

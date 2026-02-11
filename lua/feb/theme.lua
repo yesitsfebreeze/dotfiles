@@ -2,7 +2,7 @@
 
 local vim = vim or {}
 
-local add = require('deps').add
+local add = require('feb/deps').add
 
 local M = {}
 
@@ -40,7 +40,7 @@ local function apply_transparent()
 end
 
 function M.setup()
-	add({ source = 'datsfilipe/vesper.nvim' })
+	add({ source = 'webhooked/kanso.nvim' })
 	vim.g.nord_contrast = true
 	vim.g.nord_borders = true
 	vim.g.nord_disable_background = true
@@ -48,31 +48,12 @@ function M.setup()
 	vim.g.nord_uniform_diff_background = true
 	vim.g.nord_bold = false
 
-	require('vesper').setup({
+	require('kanso').setup({
 		transparent = true,
-		italics = {
-			comments = false,
-			keywords = false,
-			functions = false,
-			strings = false,
-			variables = false,
-		},
-		overrides = {},
-		palette_overrides = {}
+		italics = false,
 	})
 
-	vim.cmd.colorscheme('vesper')
-	
-	-- Configure square borders
-	vim.opt.fillchars = {
-		vert = '│',
-		horiz = '─',
-		vertleft = '┤',
-		vertright = '├',
-		verthoriz = '┼',
-		horiz = '─',
-	}
-
+  vim.cmd.colorscheme('kanso-zen')
 	apply_transparent()
 
 	-- Reapply transparent background after colorscheme changes
