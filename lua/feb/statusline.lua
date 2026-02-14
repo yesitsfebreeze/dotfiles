@@ -46,7 +46,7 @@ function M.setup(opts)
     add({ source = 'folke/noice.nvim', depends = { 'MunifTanjim/nui.nvim' } })
 
     vim.opt.cmdheight = 0
-	vim.opt.laststatus = 0
+	vim.opt.laststatus = 3
 	vim.opt.showmode = false
 
 	local m = { n = 'N', i = 'I', v = 'V', V = 'V', [''] = 'V', c = 'C', R = 'R', t = 'T' }
@@ -55,8 +55,7 @@ function M.setup(opts)
 	require('lualine').setup({
 		options = { component_separators = '', section_separators = '', globalstatus = true,
 			theme = { normal = {a=e,b=e,c=e}, insert = {a=e,b=e,c=e}, visual = {a=e,b=e,c=e}, replace = {a=e,b=e,c=e}, command = {a=e,b=e,c=e} }},
-		sections = {}, inactive_sections = {},
-		tabline = {
+		sections = {
 			lualine_a = {{ function() return vim.fn.mode()=='c' and ' :' or '   '..m[vim.fn.mode()] end,
 				color = function() return {fg=modes[vim.fn.mode()]or'#c0ccdb',gui='bold'} end }},
 			lualine_b = {'branch','diff','diagnostics'},
@@ -77,6 +76,8 @@ function M.setup(opts)
 			lualine_y = { function() return vim.fn.mode()~='c' and vim.fn.line('.')..':'..vim.fn.col('.') or '' end },
 			lualine_z = {{ function() return vim.fn.mode()~='c' and os.date('%H:%M') or '' end }},
 		},
+		inactive_sections = {},
+		tabline = {},
 	})
 
 	local pad = '    '
@@ -101,7 +102,7 @@ function M.setup(opts)
 		messages = { enabled = true, view = 'mini', view_error = 'mini', view_warn = 'mini' },
 		popupmenu = { enabled = false },
 		views = {
-			cmdline = { position = { row = 0, col = 0 }, size = { width = '100%', height = 'auto' } },
+			cmdline = { position = { row = '100%', col = 0 }, size = { width = '100%', height = 'auto' } },
 			mini = { timeout = 5000 },
 		},
 		routes = {{ view = 'mini', filter = { event = 'msg_showmode' } }},

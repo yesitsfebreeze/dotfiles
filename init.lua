@@ -3,11 +3,11 @@ local vim = vim  or {}
 require('feb/defaults').setup()
 
 local ModeColors = {
-	i = "#5ad2e4",
-	n = "#56ef9b",
-	v = "#e6f05a",
-	r = "#e84e55",
-	c = "#f6ae57",
+	n = "#E46876",
+	i = "#87a987",
+	v = "#658594",
+	r = "#8992a7",
+	c = "#b98d7b",
 }
 
 local BracketColors = {
@@ -78,11 +78,11 @@ local HotKeys = {
 vim.g.mapleader = HotKeys.leader
 vim.g.maplocalleader = HotKeys.leader
 
-require('feb/telescope').setup({
-	max_results = 500,
-	max_results_per_file = 10,
-	exclude_extension = { "sql" },
-})
+-- require('feb/telescope').setup({
+-- 	max_results = 500,
+-- 	max_results_per_file = 10,
+-- 	exclude_extension = { "sql" },
+-- })
 require('feb/blockcursor').setup({colors = ModeColors})
 -- require('feb/invert').setup({hotkey = HotKeys.to_normal })
 require('feb/statusline').setup({colors = ModeColors})
@@ -96,41 +96,43 @@ require('feb/sessions').setup()
 require('feb/whitespace').setup()
 require('feb/century').setup()
 require('feb/explorer').setup({hotkeys = HotKeys.explorer})
-require('feb/picker').setup({hotkeys = HotKeys.picker})
 
--- Quick Actions
+require('finder').setup()
+vim.keymap.set('n', '<leader><leader>', require('finder').enter, { desc = 'Finder' })
 
--- Reload config
-keymap.rebind('n', '<leader>r', function()
-	vim.cmd('source ~/.config/nvim/init.lua')
-	vim.notify('Config reloaded', vim.log.levels.INFO)
-end, { noremap = true, silent = true, desc = 'Reload config' })
+-- -- Quick Actions
 
--- Paste from system clipboard (insert mode)
-keymap.rebind('i', '<C-v>', '<C-r>+', { noremap = true, desc = 'Paste from clipboard' })
+-- -- Reload config
+-- keymap.rebind('n', '<leader>r', function()
+-- 	vim.cmd('source ~/.config/nvim/init.lua')
+-- 	vim.notify('Config reloaded', vim.log.levels.INFO)
+-- end, { noremap = true, silent = true, desc = 'Reload config' })
 
--- Command mode shortcut
-keymap.rebind({'i', 'n'}, '<C-k>', function()
-	vim.g.leave_normal = false
-	vim.cmd('stopinsert')
-	vim.schedule(function() vim.api.nvim_feedkeys(':', 'n', false) end)
-end, { noremap = true, silent = true, desc = 'Command mode' })
+-- -- Paste from system clipboard (insert mode)
+-- keymap.rebind('i', '<C-v>', '<C-r>+', { noremap = true, desc = 'Paste from clipboard' })
 
--- Highlight clear on ESC (only in normal mode, don't override default behavior)
-vim.keymap.set('n', '<Esc>', function()
-	local buf = vim.api.nvim_get_current_buf()
-	if vim.api.nvim_buf_is_valid(buf) and vim.bo[buf].buftype == "" then
-		vim.cmd('nohlsearch')
-	end
-	-- Return to default <Esc> behavior
-	return '<Esc>'
-end, { silent = true, expr = true })
+-- -- Command mode shortcut
+-- keymap.rebind({'i', 'n'}, '<C-k>', function()
+-- 	vim.g.leave_normal = false
+-- 	vim.cmd('stopinsert')
+-- 	vim.schedule(function() vim.api.nvim_feedkeys(':', 'n', false) end)
+-- end, { noremap = true, silent = true, desc = 'Command mode' })
 
--- Quit commands
-keymap.rebind({'n', 'i'}, '<C-q>', function()
-	vim.cmd('confirm quit')
-end, { noremap = true, silent = true, desc = 'Quit (with save prompt)' })
+-- -- Highlight clear on ESC (only in normal mode, don't override default behavior)
+-- vim.keymap.set('n', '<Esc>', function()
+-- 	local buf = vim.api.nvim_get_current_buf()
+-- 	if vim.api.nvim_buf_is_valid(buf) and vim.bo[buf].buftype == "" then
+-- 		vim.cmd('nohlsearch')
+-- 	end
+-- 	-- Return to default <Esc> behavior
+-- 	return '<Esc>'
+-- end, { silent = true, expr = true })
 
-keymap.rebind({'n', 'i'}, '<C-Esc>', function()
-	vim.cmd('quitall!')
-end, { noremap = true, silent = true, desc = 'Quit without saving' })
+-- -- Quit commands
+-- keymap.rebind({'n', 'i'}, '<C-q>', function()
+-- 	vim.cmd('confirm quit')
+-- end, { noremap = true, silent = true, desc = 'Quit (with save prompt)' })
+
+-- keymap.rebind({'n', 'i'}, '<C-Esc>', function()
+-- 	vim.cmd('quitall!')
+-- end, { noremap = true, silent = true, desc = 'Quit without saving' })

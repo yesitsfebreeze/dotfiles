@@ -58,7 +58,7 @@ function M.setup(opts)
 			delete       = { text = '▎' },
 			topdelete    = { text = '▎' },
 			changedelete = { text = '▎' },
-			untracked    = { text = '▎' },
+			untracked    = { text = '' },
 		},
 		signcolumn = true,
 		numhl      = true,
@@ -67,7 +67,7 @@ function M.setup(opts)
 		watch_gitdir = {
 			follow_files = true
 		},
-		attach_to_untracked = true,
+		attach_to_untracked = false,
 		current_line_blame = false,
 		sign_priority = 6,
 		update_debounce = 100,
